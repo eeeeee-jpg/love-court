@@ -210,6 +210,42 @@
     background: repeating-linear-gradient(45deg, #5a2a3a 0 4px, #43304f 4px 8px);
     mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; }
   .frame.dark { background: var(--ui-panel); color: var(--ui-text); }
+
+  /* Juror mood gauge: label, number, change arrow, bar (fill + dashed empty track) */
+  #gauge { position: absolute; z-index: 150; padding: 1.6cqw 1.2cqw .8cqw; background: var(--ui-panel); color: var(--ui-text);
+           font-size: 1.1cqw; transition: opacity var(--g-fade); }
+  #gauge[hidden] { display: none; }
+  #gauge.fade { opacity: 0; }
+  .g-row { display: grid; grid-template-columns: 4.6cqw 2.4cqw 1.2cqw 1fr; align-items: center; gap: .4cqw; margin: .3cqw 0; }
+  .g-num { text-align: right; font-weight: bold; font-variant-numeric: tabular-nums; }
+  .g-arrow { width: 0; height: 0; border: .4cqw solid transparent; visibility: hidden; }
+  .g-arrow.up { visibility: visible; border-top: 0; border-bottom: .6cqw solid var(--g-not-guilty); }
+  .g-arrow.down { visibility: visible; border-bottom: 0; border-top: .6cqw solid var(--g-protest); }
+  .g-bar { position: relative; height: 1cqw; border: 1px dashed rgba(245,236,215,.45); }
+  .g-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--c); }
+
+  /* Cut-in: dim + flash, a colored band with diagonal speed lines, the speaker sprite and a star burst */
+  #cutin { position: absolute; inset: 0; z-index: 215; pointer-events: none; overflow: hidden; }
+  #cutin[hidden] { display: none; }
+  #cutin .dim { position: absolute; inset: 0; background: #000; opacity: 0; }
+  #cutin .flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+  #cutin .band { position: absolute; left: 0; right: 0; top: 50%; translate: 0 -50%; height: var(--band-h); overflow: hidden;
+                 background: repeating-linear-gradient(-60deg, rgba(255,255,255,.18) 0 .3cqw, transparent .3cqw 2.2cqw), var(--band); }
+  #cutin .who { position: absolute; top: 4%; width: var(--who-w); }
+  #cutin .who svg { display: block; width: 100%; shape-rendering: crispEdges; }
+  #cutin.left .who { left: 6%; } #cutin.right .who { right: 6%; }
+  #cutin .burst { position: absolute; top: 50%; translate: 0 -50%; width: var(--burst-w); height: var(--burst-h); background: #fff;
+                  clip-path: var(--star); display: flex; align-items: center; justify-content: center; }
+  #cutin.left .burst { right: 8%; } #cutin.right .burst { left: 8%; }
+  /* Bold dark-wine text with a white outline, tilted and trembling */
+  .burst b, .stamp b { font: 900 var(--burst-font) var(--font-title); color: var(--cutin-text); white-space: nowrap;
+                       -webkit-text-stroke: .35cqw #fff; paint-order: stroke fill; rotate: var(--tilt); animation: jitter .08s steps(2) infinite; }
+  @keyframes jitter { 50% { translate: var(--jitter) calc(var(--jitter) * -1); } }
+  /* Verdict stamp in the close-up: gold-rimmed star (gold wrapper + white inner star) */
+  .stamp { position: absolute; z-index: 101; /* above the judge's label (100) */ left: 50%; top: 42%; translate: -50% -50%; width: var(--stamp-w); height: var(--stamp-h);
+           padding: .6cqw; background: var(--gold-base); clip-path: var(--star); }
+  .stamp > div { width: 100%; height: 100%; background: #fff; clip-path: var(--star); display: flex; align-items: center; justify-content: center; }
+  .stamp b { font-size: var(--stamp-font); }
   .frame.dark .msg b, .frame.dark p { color: var(--ui-text); }
   .card.outro span { align-self: center; padding: .2cqw 1cqw; border-radius: 1cqw; background: #D4AF37; color: #222; font-size: 1.2cqw; font-weight: bold; }
   .card.outro p { margin: 0; color: #444; }
@@ -263,6 +299,9 @@
   <div id="closeup"></div>
   <div id="sub"></div>
   <div id="dialog" hidden><span class="tag"><b></b></span><p></p><i class="more"></i></div>
+  <div id="gauge" class="frame" hidden></div>
+  <div id="cutin" hidden><div class="dim"></div><div class="flash"></div>
+    <div class="band"><div class="who"></div><div class="burst"><b></b></div></div></div>
   <div id="roleOverlay" class="overlay" hidden>
     <div class="card">
       <h1>연애 재판</h1>
@@ -329,10 +368,22 @@ const ISSUE_DEBATE = [
     { id: 'defender',   text: '모임 중에 꺼질 휴대폰까지 미리 예측하라는 것은 무리한 요구입니다.' },
   ] },
   { title: '쟁점 2. 밤새 연락을 시도하고 화를 낸 것은 정당한 걱정인가, 지나친 구속인가?', lines: [
-    { id: 'defender',   text: '부재중 전화를 일곱 통 남기고 친구들에게까지 연락한 것은 걱정을 넘어선 압박이었습니다.' },
-    { id: 'prosecutor', text: '열두 시간 동안 소식이 없다면 누구라도 걱정합니다. 걱정은 구속이 아니라 애정의 표현입니다.' },
+    // cutin: shout shown in a cut-in right before the line
+    { id: 'defender',   text: '부재중 전화를 일곱 통 남기고 친구들에게까지 연락한 것은 걱정을 넘어선 압박이었습니다.', cutin: '일곱 통은 압박입니다!' },
+    { id: 'prosecutor', text: '열두 시간 동안 소식이 없다면 누구라도 걱정합니다. 걱정은 구속이 아니라 애정의 표현입니다.', cutin: '걱정은 구속이 아닙니다!' },
   ] },
 ];
+// Verdict stamp, slammed on the 3rd gavel strike
+const VERDICT_STAMPS = { notGuilty: '무죄!', protestJustified: '항의 정당!' };
+// Juror mood gauge (stages 6~9): not-guilty side value, the protest side is 100 - value.
+// GAUGE_STEPS[stage] = value after each speech of that stage, in order (null = no change)
+const GAUGE_TEXT = { title: '배심원 마음', notGuilty: '무죄 쪽', protest: '항의 쪽' };
+const GAUGE_START = 50;
+const GAUGE_STEPS = {
+  6: [44, 54, 60, 52],   // issue 1: prosecutor, defender / issue 2: defender, prosecutor
+  7: [47, 55, null],     // closing: prosecutor, defender, judge
+  8: [58, 63, 66, 59],   // discussion: 별빛, 모카, 두부, 감자
+};
 // Closing: final statements + judge's instructions (placeholder)
 const CLOSING = [
   { id: 'prosecutor', text: '정리하겠습니다. 연락이 끊긴다는 말 한마디가 없었던 점이, 이 모든 걱정의 시작이었습니다.' },
@@ -414,6 +465,18 @@ const HIGHLIGHT_COLOR = '#F0B24A';
 const CHAT_STAGES = [8];           // stages that show the center trial log; [5, 6, 7, 8] = old behavior
 const FRAME_PATTERN = true;        // striped band outside the panel frames
 const FRAME_FILL = 'keep';         // 'keep' = each panel's own fill | 'dark' = panelDark + UI text color
+// Juror mood gauge panel (top right, % of container) and its motion
+const GAUGE = { right: 2, top: 4, width: 24, colors: { notGuilty: '#1F6F6B', protest: '#8E2A3A' },
+                moveMs: 600, arrowMs: 1000, shakeAt: 8, shakeMs: 300, fadeMs: 600 };
+// Cut-in before a shouted line + verdict stamp. Times in ms; band/burst/stamp sizes in % of container height / cqw
+const CUTIN_SOUND_ENABLED = true;
+const CUTIN = {
+  ms: 1100, dim: .4, flashMs: 80, bandHeight: 45, bandInMs: 150, outMs: 150,
+  spriteScale: 5, slideMs: 200,                      // sprite width = 4cqw × spriteScale
+  burstW: 52, burstH: 24, burstPoints: 16, burstFont: 2.6, burstMs: 250, tilt: -6, jitter: .25,
+  textColor: '#5a1020', colors: { prosecutor: '#8E2A3A', defender: '#1F6F6B' },
+  stampW: 56, stampH: 32, stampFont: 5, stampMs: 1200,
+};
 const NAMEPLATE_SIDE_MODE = 'rotated'; // 'rotated' | 'stacked' (upright vertical text, no rotation)
 const NAMEPLATE_ROTATION = { prosecutor: 270, defender: 90 }; // degrees, 'rotated' mode only
 const NAMEPLATES = [
@@ -617,7 +680,34 @@ const outroCard = endOverlay.querySelector('.card');
 const frameTab = text => { const t = Object.assign(tag('div'), { className: 'frame-tab' }); t.append(tag('b', text)); return t; };
 casePanel.prepend(frameTab(PANEL_TABS.case));
 outroCard.prepend(frameTab(PANEL_TABS.outro));
-[chat, casePanel, votePanel, outroCard].forEach(el => {
+// Juror mood gauge: two rows (not guilty / protest), values always add up to 100
+const gauge = document.getElementById('gauge');
+Object.assign(gauge.style, { right: GAUGE.right + '%', top: GAUGE.top + '%', width: GAUGE.width + '%' });
+[['--g-not-guilty', GAUGE.colors.notGuilty], ['--g-protest', GAUGE.colors.protest], ['--g-fade', GAUGE.fadeMs + 'ms']]
+  .forEach(([k, v]) => stage.style.setProperty(k, v));
+gauge.append(frameTab(GAUGE_TEXT.title));
+const gaugeRows = ['notGuilty', 'protest'].map(key => {
+  const row = Object.assign(tag('div'), { className: 'g-row' });
+  const num = Object.assign(tag('b'), { className: 'g-num' }), arrow = Object.assign(tag('i'), { className: 'g-arrow' });
+  const bar = Object.assign(tag('div'), { className: 'g-bar' }), fill = tag('i');
+  fill.style.setProperty('--c', GAUGE.colors[key]);
+  bar.append(fill);
+  row.append(tag('span', GAUGE_TEXT[key]), num, arrow, bar);
+  gauge.append(row);
+  return { num, arrow, bar, fill };
+});
+// Cut-in: star burst polygon + sizes/colors from CUTIN
+const cutinEl = document.getElementById('cutin');
+const starPolygon = n => 'polygon(' + Array.from({ length: n * 2 }, (_, i) => {
+  const a = Math.PI * i / n - Math.PI / 2, r = i % 2 ? 36 : 50;
+  return `${50 + r * Math.cos(a)}% ${50 + r * Math.sin(a)}%`;
+}).join(',') + ')';
+[['--star', starPolygon(CUTIN.burstPoints)], ['--band-h', CUTIN.bandHeight + '%'], ['--who-w', 4 * CUTIN.spriteScale + 'cqw'],
+ ['--burst-w', CUTIN.burstW + 'cqw'], ['--burst-h', CUTIN.burstH + 'cqw'], ['--burst-font', CUTIN.burstFont + 'cqw'],
+ ['--tilt', CUTIN.tilt + 'deg'], ['--jitter', CUTIN.jitter + 'cqw'], ['--cutin-text', CUTIN.textColor],
+ ['--stamp-w', CUTIN.stampW + 'cqw'], ['--stamp-h', CUTIN.stampH + 'cqw'], ['--stamp-font', CUTIN.stampFont + 'cqw']]
+  .forEach(([k, v]) => stage.style.setProperty(k, v));
+[chat, casePanel, votePanel, outroCard, gauge].forEach(el => {
   el.classList.add('frame');
   el.classList.toggle('patterned', FRAME_PATTERN);
   el.classList.toggle('dark', FRAME_FILL === 'dark');
@@ -791,7 +881,7 @@ function setGavelUp(up, ms) {
   gavelEl.classList.toggle('up', up);
   closeJudge.classList.toggle('gavel-up', up);
 }
-async function gavelStrikes(times, g) {
+async function gavelStrikes(times, g, onHit) {
   const block = gavelEl.firstChild;
   for (let i = 0; i < times; i++) {
     if (g !== gen) return;
@@ -811,6 +901,7 @@ async function gavelStrikes(times, g) {
     block.offsetWidth;
     block.classList.add('hit');
     dbg('gavel hit', i + 1);
+    onHit?.(i);
     await wait(GAVEL.gapMs - GAVEL.raiseMs - GAVEL.strikeMs);
   }
 }
@@ -825,8 +916,10 @@ function addMsg(cls, ...children) {
   msgs.scrollTop = msgs.scrollHeight;
   return m;
 }
-async function say(id, text, ms, g) {
+async function say(id, text, ms, g, cutin) {
   await stepForth(id, g);
+  if (g !== gen) return;
+  if (cutin) await cutIn(id, cutin, g); // before the line appears
   if (g !== gen) return;
   const m = addMsg('msg cur', tag('b', AVATARS.find(a => a.id === id).label), tag('span', text));
   const inBox = !seatOf(id).color; // judge/prosecutor/defender speak in the dialogue box; jurors only in the chat
@@ -835,6 +928,7 @@ async function say(id, text, ms, g) {
   if (g !== gen) return;
   m.classList.remove('cur');
   if (inBox) lineDone();
+  gaugeAfterLine();
 }
 // Speech bubble icon + mouth movement
 async function talk(el, ms, g) {
@@ -846,8 +940,8 @@ async function talk(el, ms, g) {
   setTalking(el, false);
 }
 async function sayAll(lines, g) {
-  for (const [i, { id, text }] of lines.entries()) {
-    await say(id, text, OPENING_MS, g);
+  for (const [i, { id, text, cutin }] of lines.entries()) {
+    await say(id, text, OPENING_MS, g, cutin);
     if (g !== gen) return;
     if (lines[i + 1]?.id !== id) await returnSeat(id, g); // stay standing if the same person speaks next
     if (g !== gen) return;
@@ -892,6 +986,93 @@ const speech = (id, text, ms) => DIALOGUE_MODE === 'box' && caption(text, { id, 
 // Speech finished: show the blinking ▼ (box mode)
 const lineDone = () => dialog.classList.add('done');
 const chatShownAt = i => CHAT_STAGES.includes(i === 9 ? 8 : i); // stage 9 (filter demo) belongs to the discussion
+
+// ----- Juror mood gauge -----
+let gaugeValue = GAUGE_START, gaugeToken = 0, gaugeLine = 0; // gaugeLine: speech index within the current stage
+// Value at the start of stage i: the last step of the earlier stages
+const gaugeAt = i => Object.entries(GAUGE_STEPS).filter(([s]) => +s < i).flatMap(([, v]) => v).filter(v => v != null).at(-1) ?? GAUGE_START;
+function setGauge(v, animate) {
+  const from = gaugeValue, token = ++gaugeToken, values = [v, 100 - v];
+  gaugeValue = v;
+  gaugeRows.forEach((r, k) => {
+    r.fill.style.transition = animate ? `width ${GAUGE.moveMs}ms ease-in-out` : 'none';
+    r.fill.style.width = values[k] + '%';
+    r.arrow.className = 'g-arrow' + (animate && v !== from ? ((k ? from > v : v > from) ? ' up' : ' down') : '');
+    if (!animate) r.num.textContent = values[k];
+  });
+  if (!animate) return;
+  const t0 = performance.now();
+  const tick = now => { // number counter, follows the bar easing roughly
+    if (token !== gaugeToken) return;
+    const p = Math.min(1, (now - t0) / GAUGE.moveMs), n = Math.round(from + (v - from) * (p < .5 ? 2 * p * p : 1 - (2 - 2 * p) ** 2 / 2));
+    gaugeRows[0].num.textContent = n;
+    gaugeRows[1].num.textContent = 100 - n;
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  setTimeout(() => token === gaugeToken && gaugeRows.forEach(r => r.arrow.className = 'g-arrow'), GAUGE.arrowMs);
+  if (Math.abs(v - from) >= GAUGE.shakeAt)
+    gaugeRows.forEach(r => r.bar.animate([{ translate: '0 0' }, { translate: '-.3cqw 0' }, { translate: '.3cqw 0' }, { translate: '0 0' }],
+                                         { duration: GAUGE.shakeMs }));
+}
+// After each speech: move to the next step of this stage, if any
+function gaugeAfterLine() {
+  const v = GAUGE_STEPS[cur]?.[gaugeLine++];
+  if (v != null) setGauge(v, true);
+}
+
+// ----- Cut-in + verdict stamp -----
+function cutinSound() {
+  if (!CUTIN_SOUND_ENABLED) return;
+  try {
+    audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), vol = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, t);
+    osc.frequency.exponentialRampToValueAtTime(880, t + .12);
+    vol.gain.setValueAtTime(.25, t);
+    vol.gain.exponentialRampToValueAtTime(.001, t + .25);
+    osc.connect(vol).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + .25);
+  } catch {} // no Web Audio: silent cut-in
+}
+async function cutIn(id, text, g) {
+  const C = CUTIN, left = id === 'prosecutor'; // prosecutor's sprite on the left, defender's on the right
+  const [dim, flash, band] = cutinEl.children, who = band.firstChild, burst = band.lastChild;
+  cutinEl.className = left ? 'left' : 'right';
+  cutinEl.hidden = false;
+  band.style.setProperty('--band', C.colors[id]);
+  who.innerHTML = spriteSVG('side', PALETTES[id], !left);
+  burst.firstChild.textContent = text;
+  cutinSound();
+  dim.animate([{ opacity: 0 }, { opacity: C.dim }], { duration: 100, fill: 'forwards' });
+  flash.animate([{ opacity: 1 }, { opacity: 0 }], { duration: C.flashMs, fill: 'forwards' });
+  band.animate([{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: C.bandInMs, easing: 'ease-out', fill: 'both' });
+  who.animate([{ translate: (left ? '-120%' : '120%') + ' 0' }, { translate: '0 0' }],
+              { delay: 100, duration: C.slideMs, easing: 'ease-out', fill: 'both' });
+  burst.animate([{ scale: .2, opacity: 0 }, { scale: 1.15, opacity: 1, offset: .7 }, { scale: 1, opacity: 1 }],
+                { delay: 250, duration: C.burstMs, easing: 'ease-out', fill: 'both' });
+  await wait(C.ms - C.outMs);
+  if (g !== gen) return;
+  await finished(cutinEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: C.outMs }));
+  if (g !== gen) return;
+  hideCutin();
+}
+function hideCutin() {
+  cutinEl.hidden = true;
+  cutinEl.getAnimations({ subtree: true }).forEach(an => an instanceof CSSAnimation || an.cancel());
+}
+// Big gold-rimmed star slammed onto the close-up; removed by the caller (or buildState, class fx)
+function showStamp(text) {
+  const s = Object.assign(tag('div'), { className: 'stamp fx' }), inner = tag('div');
+  inner.append(tag('b', text));
+  s.append(inner);
+  closeup.append(s);
+  s.animate([{ scale: 2.4, opacity: 0 }, { scale: .95, opacity: 1, offset: .7 }, { scale: 1, opacity: 1 }], { duration: 160, easing: 'ease-in' });
+  return s;
+}
 
 function setInputEnabled(on) {
   chatInput.disabled = !on;
@@ -1090,6 +1271,8 @@ const STAGES = [
     await sayAll(['prosecutor', 'defender'].map(id => ({ id, text: OPENING[id] })), g);
   } },
   { name: '쟁점별 주장·반박', run: async g => {
+    gauge.classList.remove('fade');
+    gauge.hidden = false; // shown from here until the vote
     for (const { title, lines } of ISSUE_DEBATE) {
       addMsg('msg sys', tag('span', title));
       speech(null, title); // shown while the first speaker steps forward
@@ -1108,6 +1291,8 @@ const STAGES = [
   { name: '', run: g => filterDemo(g) }, // 9 chat filter demo, on its own ▶
   { name: '평결 투표', waitsForInput: true, run: async g => {
     chat.hidden = true;
+    gauge.classList.add('fade');
+    setTimeout(() => g === gen && (gauge.hidden = true), GAUGE.fadeMs);
     const votes = { [ME]: null, ...NPC_VOTES };
     Object.keys(votes).forEach(id => setMark(id, '?'));
     const buttons = OPTIONS.map(o => tag('button', OPTION_LABELS[o]));
@@ -1155,7 +1340,11 @@ const STAGES = [
     }
     if (g !== gen) return;
     dbg('gavel start');
-    await gavelStrikes(3, g);
+    let stamp = null;
+    await gavelStrikes(3, g, i => { if (i === 2) stamp = showStamp(VERDICT_STAMPS[VERDICT.result]); });
+    await wait(CUTIN.stampMs - (GAVEL.gapMs - GAVEL.raiseMs - GAVEL.strikeMs)); // the stamp stays ~stampMs after the 3rd hit
+    if (g !== gen) return;
+    stamp?.remove();
     await wait(GAVEL.pauseMs);
     if (g !== gen) return;
     leaveCloseup();
@@ -1190,6 +1379,7 @@ async function runStage(i) {
   nextBtn.disabled = true;
   caption(s.name, { id: s.speaker });
   if (i >= 5 && i <= 9) chat.hidden = !chatShownAt(i);
+  gaugeLine = 0;
   dbg('stage', i, 'start');
   const runs = [s.run(g).then(() => 'done')];
   if (!s.waitsForInput) runs.push(wait(SAFETY_UNLOCK_MS).then(() => 'safety timer'));
@@ -1222,6 +1412,10 @@ function buildState(i) {
     place(el, inside ? a : judge ? JUDGE_DOOR : DOOR);
   });
   document.querySelectorAll('.react, .fx').forEach(el => el.remove());
+  hideCutin();
+  gauge.classList.remove('fade');
+  gauge.hidden = !(i >= 7 && i <= 10); // stage 6 shows it when it starts
+  setGauge(gaugeAt(i), false);
   roleOverlay.hidden = endOverlay.hidden = true;
   closeup.classList.remove('show');
   closeJudge.className = 'avatar';
