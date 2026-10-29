@@ -173,16 +173,19 @@
   #closeup .rhand { transition: transform .1s; }
   #closeup .gavel-up .rhand { transform: translateY(-2px); }
   @keyframes gavel { 20% { translate: -6px 3px; } 40% { translate: 6px -3px; } 60% { translate: -4px 0; } 80% { translate: 3px 0; } }
-  /* Verdict reactions: cheer = 2 jumps, slump = sink while seated */
-  .cheer svg { animation: jump .45s ease-out .3s 2; }
-  @keyframes jump { 50% { translate: 0 -18%; } }
-  .slump svg { animation: slump .6s ease-out forwards; }
-  @keyframes slump { to { translate: 0 6%; } }
-  /* Reaction icons drawn with CSS shapes, above the label */
+  /* Verdict reactions (stage 12). Motion runs on the Web Animations API; these are the shapes */
+  .legK, .fist { display: none; }
+  .kneel .legK, .kneel .fist { display: inline; }
+  .kneel .legA, .kneel .legB, .kneel .legS { display: none; }
+  .kneel svg { translate: 0 10%; overflow: visible; } /* body lowered onto the folded legs */
+  .burst, .impact { position: absolute; z-index: 99; width: 0; height: 0; pointer-events: none; }
+  .spark { position: absolute; }
+  .impact i { position: absolute; left: 0; top: 0; background: #fff; transform-origin: 0 50%; }
+  .impact b { position: absolute; border-radius: 50%; background: #c9b9a0; }
+  .balloons { position: absolute; left: 50%; bottom: 100%; translate: -50% 0; z-index: 99; }
+  .balloons svg { shape-rendering: auto; } /* .avatar svg is pixel art (crispEdges) */
+  /* Sweat drop drawn with CSS, above the label */
   .react { position: absolute; bottom: 100%; left: 50%; translate: -50% 0; margin-bottom: .4em; }
-  .react.star { width: 1.4em; height: 1.4em; background: #ffd34d; animation: pop .4s ease-in-out infinite alternate;
-                clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
-  @keyframes pop { to { scale: 1.2; } }
   .react.sweat { width: .9em; height: .9em; background: #7fc8ff; border: .08em solid #fff; border-radius: 0 50% 50% 50%; rotate: 45deg; }
   .shake { animation: shake .3s; }
   @keyframes shake { 25% { transform: translateX(-.4cqw); } 75% { transform: translateX(.4cqw); } }
@@ -237,7 +240,7 @@ const JUDGMENT_RIDERS = {
   protestJustified: '재판부는 다음과 같이 권고한다. 배터리가 20퍼센트 남으면 미리 알릴 것.',
 };
 const CLOSING_LINE = '이상으로 재판을 마칩니다. 폐정합니다.';
-// Outro card (stage 12)
+// Outro card (stage 13)
 const OUTRO = { label: '다음 사건', title: '커피 한 잔 더치페이 사건', note: '곧 개정' };
 const NAV_LABELS = { prev: '이전 단계', next: '다음 단계' }; // arrow buttons (screen readers)
 const CASE = {
@@ -349,7 +352,7 @@ const PANEL = { x: 32, y: 21, w: 36, h: 20 }; // ends above the back-row juror b
 const NPC_VOTE_MS = 700;
 // Gavel sound (Web Audio) + screen shake. false = visible gavel motion only, no sound or shake
 const GAVEL_ENABLED = true;
-const GAVEL_GAP_MS = 450; // closing line strike (stage 11)
+const GAVEL_GAP_MS = 450; // closing line strike (stage 12)
 // Close-up gavel, 3 strikes after the verdict reading. x, y = sound block center on the desk top (% of image);
 // length = gavel length, block = sound block width (cqw); raiseDeg = lift angle around the grip end; times in ms
 const GAVEL = { x: 41, y: 55.5, length: 8, block: 3, raiseDeg: 50, raiseMs: 250, strikeMs: 100, gapMs: 700, shakeMs: 250, pauseMs: 1000 };
@@ -357,13 +360,19 @@ const GAVEL = { x: 41, y: 55.5, length: 8, block: 3, raiseDeg: 50, raiseMs: 250,
 const SPEECH_MS_PER_CHAR = 250;
 const SAFETY_UNLOCK_MS = 60000; // a stage that hasn't finished by then (except ones waiting for input) enables ▶ anyway
 const DEBUG_LOG = true;         // console logs for stages and the verdict sequence
-// Prosecutor/defender reaction to the verdict (stage 11): cheer | slump
-const REACTIONS = {
-  notGuilty:        { defender: 'cheer', prosecutor: 'slump' },
-  protestJustified: { prosecutor: 'cheer', defender: 'slump' },
+// Verdict reaction (stage 12 start): the winner jumps under fireworks and floats away with balloons,
+// the loser kneels in front of the desk and pounds the floor. Times in ms, sizes in cqw unless noted
+const WINNER = { notGuilty: 'defender', protestJustified: 'prosecutor' };
+const REACTION = {
+  totalMs: 4500,                                   // both sides start together; the closing line follows
+  jumps: 6, jumpMs: 330, jumpHeight: 30, jumpSway: 6, // jumpHeight/jumpSway: % of the avatar height/width
+  fireworks: 3, fireworkGapMs: 350, particles: 14, particleSize: .6, particleSpread: 6, particleMs: 800, burstAbove: 4,
+  colors: ['#e74c3c', '#f1c40f', '#3498db', '#2ecc71', '#ff6fb5'],
+  balloons: 5, balloonsWidth: 10, floatMs: 2500, floatSway: 1.2, // float starts at totalMs - floatMs
+  kneelOffset: 15,                                 // % toward the center, in front of the desk
+  pounds: 3, poundMs: 450, fistLift: 6,           // fistLift in sprite pixels
+  sweatColor: '#7fc8ff',
 };
-const REACTION_ICON = { cheer: 'star', slump: 'sweat' };
-const REACTION_MS = 2500;
 const OPENING_MS = 4000;
 const JUROR_MS = 3000;
 const MAX_MSGS = 5;
@@ -464,6 +473,8 @@ function spriteSVG(view, pal, mirror) {
     ? r(0, ay, 12, 1, colors.c) + handX.map((hx, i) => r(hx, ay, 2, 2, colors.s, i ? '' : 'rhand')).join('')
     : view === 'side'
     ? r(4, 14, 2, 2, p, 'legA') + r(3, 14, 1, 2, p, 'legB') + r(6, 14, 1, 2, p, 'legB') + r(6, 13, 3, 1, p, 'legS') + r(8, 14, 1, 2, p, 'legS')
+      + r(5, 13, 2, 2, p, 'legK') + r(1, 14, 4, 1, p, 'legK') + r(9, 12, 2, 2, colors.s, 'fist') // kneeling: thigh down, shin back on the floor
+
     : r(2, 15, 3, 1, p, 'legA') + r(7, 15, 3, 1, p, 'legA') + r(3, 15, 2, 1, p, 'legB') + r(8, 15, 2, 1, p, 'legB');
   const m = MOUTH[view];
   if (m) body += r(m[0], m[1], 2, 1, '#7a3b2e', 'closed') + r(m[0], m[1], 2, 2, '#4a1010', 'open');
@@ -761,6 +772,106 @@ async function filterDemo(g) {
   if (g !== gen) return;
   chatInput.value = notice.textContent = '';
 }
+// ----- Verdict reactions (stage 12). Every element made here has class fx; buildState removes them -----
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const finished = anim => anim.finished.catch(() => {}); // cancelled by ◀: resolve, the gen check stops the caller
+const AVATAR_H = 4 * AVATAR_SCALE * 4 / 3; // avatar sprite height in cqw
+function firework(el) {
+  const R = REACTION, box = tag('div');
+  box.className = 'burst fx';
+  Object.assign(box.style, { left: `calc(${el.style.left} + ${(Math.random() - .5) * 6}cqw)`,
+                             top: `calc(${el.style.top} - ${AVATAR_H + R.burstAbove + Math.random() * 3}cqw)` });
+  for (let i = 0; i < R.particles; i++) {
+    const p = tag('i'), a = (i / R.particles + Math.random() * .05) * 2 * Math.PI, d = R.particleSpread * (.6 + Math.random() * .4);
+    p.className = 'spark';
+    Object.assign(p.style, { width: R.particleSize + 'cqw', height: R.particleSize + 'cqw', margin: -R.particleSize / 2 + 'cqw', background: pick(R.colors) });
+    box.append(p);
+    p.animate([{ translate: '0 0', opacity: 1 }, { translate: `${Math.cos(a) * d}cqw ${Math.sin(a) * d}cqw`, opacity: 0 }],
+              { duration: R.particleMs, easing: 'ease-out', fill: 'forwards' });
+  }
+  court.append(box);
+  setTimeout(() => box.remove(), R.particleMs);
+}
+// Balloons on strings tied to the head: round shapes + a small highlight
+function balloons() {
+  const R = REACTION, n = R.balloons, box = tag('div');
+  box.className = 'balloons fx';
+  Object.assign(box.style, { width: R.balloonsWidth + 'cqw', height: R.balloonsWidth * 1.4 + 'cqw' });
+  box.innerHTML = '<svg viewBox="0 0 100 140"></svg>';
+  const svg = box.firstChild;
+  for (let i = 0; i < n; i++) {
+    const cx = 14 + i * 72 / Math.max(n - 1, 1), cy = 22 + (i % 2) * 14;
+    svg.insertAdjacentHTML('beforeend',
+      `<line x1="${cx}" y1="${cy + 15}" x2="50" y2="140" stroke="#eee" stroke-width=".8"/>` +
+      `<ellipse cx="${cx}" cy="${cy}" rx="11" ry="14" fill="${pick(R.colors)}"/>` +
+      `<ellipse cx="${cx - 4}" cy="${cy - 6}" rx="2.5" ry="3.5" fill="#fff" opacity=".75"/>`);
+  }
+  return box;
+}
+// Winner: stand, jump with fireworks, then float off the top of the screen with balloons; stays hidden after
+async function celebrate(id, g) {
+  const R = REACTION, el = els[id];
+  el.style.zIndex = 98; // the animated avatar becomes its own layer; keep it above chairs and desks
+  sit([id], false);
+  el.animate([{ translate: '0 0' }, { translate: `-${R.jumpSway}% -${R.jumpHeight}%`, offset: .45 },
+              { translate: `${R.jumpSway}% -${R.jumpHeight}%`, offset: .55 }, { translate: '0 0' }],
+             { duration: R.jumpMs, iterations: R.jumps, easing: 'ease-in-out' });
+  for (let i = 0; i < R.fireworks; i++) setTimeout(() => g === gen && firework(el), i * R.fireworkGapMs);
+  await wait(R.totalMs - R.floatMs);
+  if (g !== gen) return;
+  const b = balloons();
+  el.append(b);
+  b.animate([{ opacity: 0, scale: .3 }, { opacity: 1, scale: 1 }], { duration: 300, fill: 'forwards' });
+  const h = court.clientHeight, s = R.floatSway;
+  await finished(el.animate([{ translate: '0 0' }, { translate: `-${s}cqw ${-h * .25}px` }, { translate: `${s}cqw ${-h * .5}px` },
+                             { translate: `-${s}cqw ${-h * .75}px` }, { translate: `0 ${-h}px` }],
+                            { duration: R.floatMs, easing: 'ease-in', fill: 'forwards' }));
+  if (g !== gen) return;
+  el.classList.add('out'); // hides the avatar with its label, icons and balloons
+}
+// Short impact lines + dust at the fist
+function impact(el, dir) {
+  const box = tag('div');
+  box.className = 'impact fx';
+  Object.assign(box.style, { left: `calc(${el.style.left} + ${dir * 2.2}cqw)`, top: `calc(${el.style.top} + 1cqw)` });
+  [-150, -115, -65, -30].forEach(deg => {
+    const ray = tag('i');
+    Object.assign(ray.style, { width: '1.2cqw', height: '.18cqw', rotate: deg + 'deg', translate: '0 -50%' });
+    box.append(ray);
+  });
+  [[-1.2, .2], [1, .1], [.2, .4]].forEach(([x, y]) => {
+    const dot = tag('b');
+    Object.assign(dot.style, { width: '.4cqw', height: '.4cqw', left: x + 'cqw', top: y + 'cqw' });
+    box.append(dot);
+  });
+  court.append(box);
+  box.animate([{ opacity: 1, scale: .6 }, { opacity: 0, scale: 1.3 }], { duration: 350, easing: 'ease-out', fill: 'forwards' });
+  setTimeout(() => box.remove(), 350);
+}
+// Loser: step forward, kneel, pound the floor; stays kneeling after
+async function lament(id, g) {
+  const R = REACTION, el = els[id], dir = STAND_DIR[id], seat = seatOf(id);
+  el.style.zIndex = 98;
+  sit([id], false);
+  await wait(300);
+  if (g !== gen) return;
+  await walk(el, { x: seat.x + R.kneelOffset * dir, y: seat.y }, g);
+  if (g !== gen) return;
+  el.classList.add('kneel');
+  const sweat = Object.assign(tag('i'), { className: 'react sweat fx' });
+  sweat.style.background = R.sweatColor;
+  el.querySelector('.label').append(sweat);
+  const fist = el.querySelector('.fist');
+  for (let i = 0; i < R.pounds; i++) {
+    await finished(fist.animate([{ translate: '0 0' }, { translate: `0 -${R.fistLift}px`, offset: .4 },
+                                 { translate: `0 -${R.fistLift}px`, offset: .7 }, { translate: '0 0' }],
+                                { duration: R.poundMs, easing: 'ease-in' }));
+    if (g !== gen) return;
+    impact(el, dir);
+    el.animate([{ translate: '-.4cqw 0' }, { translate: '.4cqw 0' }, { translate: '-.2cqw 0' }, { translate: '0 0' }], { duration: 180 });
+  }
+  sweat.remove(); // short frustration mark; the kneeling pose stays
+}
 function showVoteResult() {
   const { counts, votes, result } = VERDICT;
   votePanel.replaceChildren(tag('h2', '평결 결과'), ...OPTIONS.map(o => {
@@ -784,7 +895,7 @@ function leaveCloseup() {
 }
 let pickRole = null; // stage 0: resolves when the juror card or ▶ is pressed
 
-// Stages 0~12. name is shown as a subtitle when the stage starts (empty = no subtitle).
+// Stages 0~13. name is shown as a subtitle when the stage starts (empty = no subtitle).
 // autoNext: chain into the next stage without ▶. waitsForInput: no safety timer (waits for the user)
 const STAGES = [
   { name: '', autoNext: true, waitsForInput: true, run: async g => { // 0 role select
@@ -851,8 +962,8 @@ const STAGES = [
       await say(id, text, JUROR_MS, g);
       if (g !== gen) return;
     }
-    await filterDemo(g);
   } },
+  { name: '', run: g => filterDemo(g) }, // 9 chat filter demo, on its own ▶
   { name: '평결 투표', waitsForInput: true, run: async g => {
     chat.hidden = true;
     const votes = { [ME]: null, ...NPC_VOTES };
@@ -879,7 +990,7 @@ const STAGES = [
     VERDICT = { result: OPTIONS.reduce((a, b) => counts[b] > counts[a] ? b : a), counts, votes };
     showVoteResult();
   } },
-  // 10 → 11 → 12 play through without ▶
+  // 11 → 12 → 13 play through without ▶
   { name: '판결 선고', autoNext: true, run: async g => { // reading → 3 gavel strikes → pause → back to the top view
     votePanel.hidden = true;
     closeup.classList.add('show');
@@ -904,19 +1015,11 @@ const STAGES = [
     if (g !== gen) return;
     leaveCloseup();
   } },
-  { name: '', autoNext: true, run: async g => { // 11: reactions, then the closing line (subtitle set here, not as the stage name)
-    const reactions = Object.entries(REACTIONS[VERDICT.result]);
-    reactions.forEach(([id, r]) => {
-      if (r === 'cheer') sit([id], false);
-      els[id].classList.add(r);
-      els[id].querySelector('.label').append(Object.assign(tag('i'), { className: 'react ' + REACTION_ICON[r] }));
-    });
-    await wait(REACTION_MS);
-    if (g !== gen) return;
-    reactions.forEach(([id, r]) => els[id].classList.remove(r));
-    document.querySelectorAll('.react').forEach(el => el.remove());
-    sit(reactions.map(([id]) => id), true);
-    await wait(400);
+  { name: '', autoNext: true, run: async g => { // 12: reactions, then the closing line (subtitle set here, not as the stage name)
+    const winner = WINNER[VERDICT.result];
+    const loser = winner === 'prosecutor' ? 'defender' : 'prosecutor';
+    dbg('reaction:', winner, 'wins');
+    await Promise.all([celebrate(winner, g), lament(loser, g), wait(REACTION.totalMs)]);
     if (g !== gen) return;
     sub.textContent = CLOSING_LINE;
     gavel(1, g);
@@ -929,7 +1032,7 @@ const STAGES = [
     if (g !== gen) return;
     els.judge.classList.add('out');
   } },
-  { name: '', run: async () => { endOverlay.hidden = false; } }, // 12 outro: next trial teaser (last stage)
+  { name: '', run: async () => { endOverlay.hidden = false; } }, // 13 outro: next trial teaser (last stage)
 ];
 
 let cur = 0; // stage being played (or last played)
@@ -964,13 +1067,15 @@ function buildState(i) {
   AVATARS.forEach(a => {
     const el = els[a.id];
     const judge = a.id === 'judge';
-    const inside = judge ? i >= 3 && i < 12 : i >= 2; // judge enters in 2, leaves in 11
-    const seated = judge ? i >= 4 && i < 12 : i === 2 || i >= 4 && i < 12; // all stand for the judge (2→3) and at the end
+    const inside = judge ? i >= 3 && i < 13 : i >= 2; // judge enters in 2, leaves in 12
+    const seated = judge ? i >= 4 && i < 13 : i === 2 || i >= 4 && i < 13; // all stand for the judge (2→3) and at the end
     el.dataset.id = a.id;
     el.className = `avatar ${el.dataset.view}` + (inside ? '' : ' out') + (seated ? ' sit' : '');
+    el.getAnimations({ subtree: true }).forEach(an => an instanceof CSSAnimation || an.cancel()); // reaction motion
+    el.style.zIndex = '';
     place(el, inside ? a : judge ? JUDGE_DOOR : DOOR);
   });
-  document.querySelectorAll('.react').forEach(el => el.remove());
+  document.querySelectorAll('.react, .fx').forEach(el => el.remove());
   roleOverlay.hidden = endOverlay.hidden = true;
   closeup.classList.remove('show');
   closeJudge.className = 'avatar';
@@ -978,8 +1083,8 @@ function buildState(i) {
   sub.classList.remove('rider');
   sub.textContent = '';
   casePanel.hidden = i !== 5;
-  chat.hidden = i < 6 || i > 9;
-  setInputEnabled(i === 9);
+  chat.hidden = i < 6 || i > 10;
+  setInputEnabled(i === 9 || i === 10);
   msgs.textContent = chatInput.value = notice.textContent = '';
   const log = [];
   if (i >= 6) log.push(...['prosecutor', 'defender'].map(id => ({ id, text: OPENING[id] })));
@@ -989,8 +1094,8 @@ function buildState(i) {
   log.forEach(l => l.title ? addMsg('msg sys', tag('span', l.title)) : addMsg('msg', tag('b', seatOf(l.id).label), tag('span', l.text)));
   document.querySelectorAll('.mark').forEach(m => m.textContent = '');
   votePanel.hidden = true;
-  if (i <= 9) VERDICT = null;
-  else if (i === 10) showVoteResult();
+  if (i <= 10) VERDICT = null;
+  else if (i === 11) showVoteResult();
   else Object.entries(VERDICT.votes).forEach(([id, v]) => setMark(id, OPTION_SHORT[v]));
 }
 function goTo(i) {
