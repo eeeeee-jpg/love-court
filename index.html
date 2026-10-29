@@ -106,7 +106,7 @@
   .frame-tab b { padding: .25cqw 1.6cqw; }
 
   /* Dialogue box (DIALOGUE_MODE 'box'): size from DIALOGUE_BOX, colors from UI_PALETTE */
-  #dialog { position: absolute; z-index: 210; left: 50%; translate: -50% 0; bottom: var(--dlg-bottom); width: var(--dlg-w); height: var(--dlg-h);
+  #dialog { position: absolute; z-index: 216; /* above the cut-in dim (215) so the line stays readable */ left: 50%; translate: -50% 0; bottom: var(--dlg-bottom); width: var(--dlg-w); height: var(--dlg-h);
             padding: 2.6cqw 3cqw 1.6cqw; background: var(--ui-panel); color: var(--ui-text); border-top: 1px solid var(--gold-base);
             font-size: var(--dlg-font); line-height: 1.5; }
   #dialog::before { content: ''; position: absolute; left: 0; right: 0; top: 2px; border-top: 1px solid var(--gold-base); } /* 2nd line, 2px gap */
@@ -470,8 +470,14 @@ const GAUGE = { right: 2, top: 4, width: 24, colors: { notGuilty: '#1F6F6B', pro
                 moveMs: 600, arrowMs: 1000, shakeAt: 8, shakeMs: 300, fadeMs: 600 };
 // Cut-in before a shouted line + verdict stamp. Times in ms; band/burst/stamp sizes in % of container height / cqw
 const CUTIN_SOUND_ENABLED = true;
+// Line timing (stages 5~7). Cut-in: entrance, then it stays through the line and leaves after the hold
+const CUTIN_INTRO_MS = 1100;
+const CUTIN_HOLD_AFTER_LINE_MS = 1500;
+const CUTIN_HOLD_MODE = 'auto';        // 'auto' | 'manual' (▶ / → after the line to continue)
+const LINE_HOLD_AFTER_TYPING_MS = 1800; // dialogue box lines (and issue titles) stay this long after typing
+const LINE_MIN_TOTAL_MS = 3200;         // typing + hold is at least this long
 const CUTIN = {
-  ms: 1100, dim: .4, flashMs: 80, bandHeight: 45, bandInMs: 150, outMs: 150,
+  dim: .4, flashMs: 80, bandHeight: 45, bandInMs: 150, outMs: 250,
   spriteScale: 5, slideMs: 200,                      // sprite width = 4cqw × spriteScale
   burstW: 52, burstH: 24, burstPoints: 16, burstFont: 2.6, burstMs: 250, tilt: -6, jitter: .25,
   textColor: '#5a1020', colors: { prosecutor: '#8E2A3A', defender: '#1F6F6B' },
@@ -919,16 +925,45 @@ function addMsg(cls, ...children) {
 async function say(id, text, ms, g, cutin) {
   await stepForth(id, g);
   if (g !== gen) return;
-  if (cutin) await cutIn(id, cutin, g); // before the line appears
+  if (cutin) await cutinIntro(id, cutin, g); // stays on screen through the line
   if (g !== gen) return;
   const m = addMsg('msg cur', tag('b', AVATARS.find(a => a.id === id).label), tag('span', text));
   const inBox = !seatOf(id).color; // judge/prosecutor/defender speak in the dialogue box; jurors only in the chat
-  if (inBox) speech(id, text, ms);
-  await talk(els[id], ms, g);
+  if (inBox && DIALOGUE_MODE === 'box') await boxLine(id, text, g, cutin);
+  else {
+    if (inBox) speech(id, text, ms);
+    await talk(els[id], ms, g);
+  }
   if (g !== gen) return;
   m.classList.remove('cur');
   if (inBox) lineDone();
   gaugeAfterLine();
+}
+// Dialogue-box line: type at TYPEWRITER_MS_PER_CHAR (mouth moves while typing), then hold.
+// Plain line: hold LINE_HOLD_AFTER_TYPING_MS, at least LINE_MIN_TOTAL_MS in all.
+// Cut-in line: ▶ completes the typing / skips the hold; hold CUTIN_HOLD_AFTER_LINE_MS ('auto') or wait for ▶ ('manual'), then the cut-in leaves
+async function boxLine(id, text, g, cutin) {
+  const t0 = performance.now(), el = els[id];
+  let next = null;
+  if (cutin) {
+    lineSkip = () => typing.active ? typing.finish() : next?.();
+    nextBtn.disabled = false;
+  }
+  speech(id, text);
+  el.classList.add('talking');
+  setTalking(el, true);
+  await typing.done;
+  el.classList.remove('talking');
+  setTalking(el, false);
+  if (g !== gen) return;
+  lineDone();
+  if (!cutin) return wait(Math.max(LINE_HOLD_AFTER_TYPING_MS, LINE_MIN_TOTAL_MS - (performance.now() - t0)));
+  const pressed = new Promise(r => next = r);
+  await (CUTIN_HOLD_MODE === 'manual' ? pressed : Promise.race([pressed, wait(CUTIN_HOLD_AFTER_LINE_MS)]));
+  if (g !== gen) return;
+  lineSkip = null;
+  nextBtn.disabled = true;
+  await cutinOut(g);
 }
 // Speech bubble icon + mouth movement
 async function talk(el, ms, g) {
@@ -953,6 +988,8 @@ const dialogTag = dialog.querySelector('.tag');
 const dialogText = dialog.querySelector('p');
 // Lines that were subtitles before (stage names, verdict lines, closing line). id = speaker (name tag), none = narration
 function caption(text, { id = null, rider = false, ms = 0 } = {}) {
+  typing.active = false;
+  typing.done = Promise.resolve();
   if (DIALOGUE_MODE === 'subtitle') {
     sub.classList.toggle('rider', rider);
     sub.textContent = text;
@@ -972,15 +1009,25 @@ function caption(text, { id = null, rider = false, ms = 0 } = {}) {
   // Hidden chars keep their space, so the text wraps where it will end up
   const chars = [...text].map((ch, i) => Object.assign(tag('span', ch), { className: hl[i] ? 'hl' : '' }));
   dialogText.replaceChildren(...chars);
-  if (!id && !rider) return; // narration shows at once
+  if (!id && !rider || !chars.length) return; // narration shows at once
   chars.forEach(c => c.style.visibility = 'hidden');
-  let k = 0;
+  let k = 0, finish;
+  typing.done = new Promise(r => finish = r);
+  typing.active = true;
+  typing.finish = () => { // also used by ▶ to complete the line at once
+    loop('typewriter', false);
+    chars.forEach(c => c.style.visibility = '');
+    typing.active = false;
+    finish();
+  };
   const step = ms ? Math.min(TYPEWRITER_MS_PER_CHAR, ms * .85 / chars.length) : TYPEWRITER_MS_PER_CHAR;
-  loop('typewriter', chars.length > 0, () => {
+  loop('typewriter', true, () => {
     chars[k++].style.visibility = '';
-    if (k >= chars.length) loop('typewriter', false);
+    if (k >= chars.length) typing.finish();
   }, step);
 }
+// The line being typed: done resolves when every char is shown
+const typing = { done: Promise.resolve(), active: false, finish() {} };
 // New lines that only exist in the dialogue box (the old subtitle mode never showed them)
 const speech = (id, text, ms) => DIALOGUE_MODE === 'box' && caption(text, { id, ms });
 // Speech finished: show the blinking ▼ (box mode)
@@ -1038,7 +1085,8 @@ function cutinSound() {
     osc.stop(t + .25);
   } catch {} // no Web Audio: silent cut-in
 }
-async function cutIn(id, text, g) {
+// Entrance (CUTIN_INTRO_MS); the cut-in then stays until cutinOut
+async function cutinIntro(id, text, g) {
   const C = CUTIN, left = id === 'prosecutor'; // prosecutor's sprite on the left, defender's on the right
   const [dim, flash, band] = cutinEl.children, who = band.firstChild, burst = band.lastChild;
   cutinEl.className = left ? 'left' : 'right';
@@ -1054,9 +1102,10 @@ async function cutIn(id, text, g) {
               { delay: 100, duration: C.slideMs, easing: 'ease-out', fill: 'both' });
   burst.animate([{ scale: .2, opacity: 0 }, { scale: 1.15, opacity: 1, offset: .7 }, { scale: 1, opacity: 1 }],
                 { delay: 250, duration: C.burstMs, easing: 'ease-out', fill: 'both' });
-  await wait(C.ms - C.outMs);
-  if (g !== gen) return;
-  await finished(cutinEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: C.outMs }));
+  await wait(CUTIN_INTRO_MS);
+}
+async function cutinOut(g) {
+  await finished(cutinEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: CUTIN.outMs }));
   if (g !== gen) return;
   hideCutin();
 }
@@ -1212,6 +1261,7 @@ function leaveCloseup() {
   caption('');
 }
 let pickRole = null; // stage 0: resolves when the juror card or ▶ is pressed
+let lineSkip = null; // during a cut-in line: ▶ completes the typing, then ends the hold
 
 // Stages 0~13. name is shown as a subtitle when the stage starts (empty = no subtitle).
 // autoNext: chain into the next stage without ▶. waitsForInput: no safety timer (waits for the user)
@@ -1275,7 +1325,9 @@ const STAGES = [
     gauge.hidden = false; // shown from here until the vote
     for (const { title, lines } of ISSUE_DEBATE) {
       addMsg('msg sys', tag('span', title));
-      speech(null, title); // shown while the first speaker steps forward
+      speech(null, title);
+      if (DIALOGUE_MODE === 'box') await wait(LINE_HOLD_AFTER_TYPING_MS); // let the title be read before a cut-in covers the screen
+      if (g !== gen) return;
       await sayAll(lines, g);
       if (g !== gen) return;
     }
@@ -1393,7 +1445,7 @@ async function runStage(i) {
 // Stops whatever is playing: pending stage code bails on the gen check
 function stopPlayback() {
   gen++;
-  pickRole = null;
+  pickRole = lineSkip = null;
   if ('speechSynthesis' in window) speechSynthesis.cancel();
   [...timers.keys()].forEach(k => loop(k, false));
   stage.classList.remove('gavel', 'gavel-hit');
@@ -1447,6 +1499,7 @@ document.getElementById('pickJuror').onclick = () => pickRole?.();
 prevBtn.onclick = () => { if (!prevBtn.disabled) goTo(cur - 1); };
 nextBtn.onclick = () => {
   if (nextBtn.disabled) return;
+  if (lineSkip) return lineSkip();
   if (pickRole) return pickRole();
   stopPlayback(); // only matters if the safety timer enabled ▶ while the stage was still running
   runStage(cur + 1);
