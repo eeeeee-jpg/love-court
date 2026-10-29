@@ -95,6 +95,32 @@
   #sub { position: absolute; z-index: 210; left: 50%; bottom: 3%; transform: translateX(-50%); max-width: 90%;
          font-size: 1.8cqw; text-align: center; background: rgba(0,0,0,.7); padding: .4cqw 1.2cqw; border-radius: 4px; }
   #sub:empty { display: none; }
+  #stage { font-family: var(--font-body); }
+
+  /* Shared ribbon/parallelogram label: gold edge = gold wrapper + colored inner, both clipped to the same shape */
+  .tag, .frame-tab { position: absolute; z-index: 1; padding: 1px; background: var(--gold-base); clip-path: var(--tag-shape); }
+  .tag b, .frame-tab b { display: block; background: var(--tag, var(--tag-judge)); clip-path: var(--tag-shape); color: var(--ui-text);
+                         font: 700 1em var(--font-title); letter-spacing: .08em; white-space: nowrap; }
+  .tag { --tag-shape: polygon(6% 0, 100% 0, 94% 100%, 0 100%); }
+  .frame-tab { --tag-shape: polygon(0 0, 100% 0, 95% 50%, 100% 100%, 0 100%, 5% 50%); top: 0; left: 1.5cqw; translate: 0 -55%; font-size: 1.2cqw; }
+  .frame-tab b { padding: .25cqw 1.6cqw; }
+
+  /* Dialogue box (DIALOGUE_MODE 'box'): size from DIALOGUE_BOX, colors from UI_PALETTE */
+  #dialog { position: absolute; z-index: 210; left: 50%; translate: -50% 0; bottom: var(--dlg-bottom); width: var(--dlg-w); height: var(--dlg-h);
+            padding: 2.6cqw 3cqw 1.6cqw; background: var(--ui-panel); color: var(--ui-text); border-top: 1px solid var(--gold-base);
+            font-size: var(--dlg-font); line-height: 1.5; }
+  #dialog::before { content: ''; position: absolute; left: 0; right: 0; top: 2px; border-top: 1px solid var(--gold-base); } /* 2nd line, 2px gap */
+  #dialog[hidden] { display: none; }
+  #dialog .tag { top: 0; left: 2cqw; translate: 0 -60%; font-size: .8em; }
+  #dialog .tag b { padding: .2cqw 2.2cqw; }
+  #dialog .tag[hidden] { display: none; }
+  #dialog p { margin: 0; }
+  #dialog .hl { color: var(--hl); }
+  #dialog.rider p { color: var(--gold-light); font-weight: bold; }
+  #dialog .more { display: none; position: absolute; right: 2cqw; bottom: 1.2cqw; border: .6cqw solid transparent; border-bottom: 0;
+                  border-top: .8cqw solid var(--gold-base); animation: more .5s ease-in-out infinite alternate; }
+  #dialog.done .more { display: block; }
+  @keyframes more { to { translate: 0 .4cqw; opacity: .5; } }
 
   /* Speech bubble icon while talking */
   /* Sized in em of the label font, so it follows AVATAR_SCALE */
@@ -111,12 +137,14 @@
   .panel { position: absolute; z-index: 150; background: rgba(0,0,0,.75);
            color: #fff; border-radius: .6cqw; font-size: 1.1cqw; display: flex; flex-direction: column; }
   .panel[hidden] { display: none; }
-  #casePanel { padding: .8cqw 1.2cqw; overflow: auto; }
-  #casePanel h2 { margin: 0 0 .4cqw; font-size: 1.5cqw; }
+  #casePanel { padding: 1.4cqw 1.2cqw .8cqw; }
+  #casePanel .scroll { flex: 1; min-height: 0; overflow: auto; scrollbar-width: none; } /* the panel itself stays overflow-visible for the tab and pattern */
+  #casePanel h2 { margin: 0 0 .4cqw; font: 700 1.5cqw var(--font-title); }
   #casePanel p, #casePanel ol { margin: .3cqw 0; }
+  @counter-style circled { system: fixed; symbols: '①' '②' '③' '④' '⑤'; suffix: ' '; }
+  #casePanel ol { list-style: circled; padding-left: 1.6cqw; }
   /* Trial log: translucent white background (opacity from config CHAT_BG_OPACITY) + dark text */
-  #chat { background: rgba(255,255,255,var(--chat-bg-op)); backdrop-filter: blur(2px); color: #222; font-size: 1.5cqw; }
-  #chat .title { padding: .4cqw 1cqw; background: rgba(215,215,215,.75); color: #111; font-weight: bold; border-radius: .6cqw .6cqw 0 0; }
+  #chat { background: rgba(255,255,255,var(--chat-bg-op)); backdrop-filter: blur(2px); color: #222; font-size: 1.5cqw; padding-top: 1cqw; }
   #msgs { flex: 1; overflow-y: auto; padding: .3cqw 1cqw; scrollbar-width: none; }
   #msgs::-webkit-scrollbar { display: none; }
   .msg { margin: .5cqw 0; opacity: .7; }
@@ -130,9 +158,15 @@
   #chatInput::placeholder { color: #666; }
   #notice { margin: .2cqw 1cqw .5cqw; color: #b00000; font-size: 1.2cqw; font-weight: bold; }
   #votePanel { padding: .8cqw 1.2cqw; gap: .5cqw; }
-  #votePanel h2 { margin: 0; font-size: 1.5cqw; text-align: center; }
-  #votePanel button { font-size: 1.2cqw; padding: .4cqw; cursor: pointer; }
-  #votePanel button.chosen { outline: .2cqw solid #ffe08a; }
+  #votePanel h2 { margin: 0; font: 700 1.5cqw var(--font-title); text-align: center; }
+  /* Vote options as a list menu: cream bar + triangle cursor on the hovered (or chosen) row */
+  #votePanel button { position: relative; font: 1.4cqw var(--font-body); text-align: left; padding: .4cqw 1cqw .4cqw 2.6cqw;
+                      border: 0; background: transparent; color: inherit; cursor: pointer; }
+  #votePanel button.sel, #votePanel button.chosen { background: #f3e6c4; color: #2a1a0e; }
+  #votePanel button.sel::before, #votePanel button.chosen::before { content: ''; position: absolute; left: 1cqw; top: 50%; translate: 0 -50%;
+    border: .5cqw solid transparent; border-right: 0; border-left: .7cqw solid #2a1a0e; }
+  #votePanel button:disabled { cursor: default; }
+  #votePanel button:disabled:not(.chosen) { opacity: .5; }
   .bar-row { display: flex; align-items: center; gap: .6cqw; }
   .bar-row span { width: 8cqw; }
   .bar { flex: 1; height: 1.2cqw; background: rgba(255,255,255,.15); }
@@ -152,7 +186,31 @@
   .card button:disabled { background: #666; color: #bbb; cursor: default; }
   /* Outro: next-trial teaser card in the translucent white panel tone + one gold accent */
   #endOverlay { flex-direction: column; gap: 1.2cqw; }
-  .card.outro { background: rgba(255,255,255,.75); backdrop-filter: blur(2px); color: #222; border-top: .5cqw solid #D4AF37; }
+  .card.outro { position: relative; background: rgba(255,255,255,.75); backdrop-filter: blur(2px); color: #222; }
+  .card h1 { font-family: var(--font-title); }
+
+  /* Decorative frame: gold double border (2px, 3px dark gap, 1px), gold corner L + dot, optional striped band outside */
+  .frame { border: 2px solid var(--gold-base); box-shadow: inset 0 0 0 3px #2a170b, inset 0 0 0 4px var(--gold-base); }
+  .frame::after { content: ''; position: absolute; inset: 6px; pointer-events: none; --c: var(--gold-base); --l: 1.1cqw; --t: 2px;
+    background:
+      linear-gradient(var(--c), var(--c)) left top / var(--l) var(--t) no-repeat,
+      linear-gradient(var(--c), var(--c)) left top / var(--t) var(--l) no-repeat,
+      linear-gradient(var(--c), var(--c)) right top / var(--l) var(--t) no-repeat,
+      linear-gradient(var(--c), var(--c)) right top / var(--t) var(--l) no-repeat,
+      linear-gradient(var(--c), var(--c)) left bottom / var(--l) var(--t) no-repeat,
+      linear-gradient(var(--c), var(--c)) left bottom / var(--t) var(--l) no-repeat,
+      linear-gradient(var(--c), var(--c)) right bottom / var(--l) var(--t) no-repeat,
+      linear-gradient(var(--c), var(--c)) right bottom / var(--t) var(--l) no-repeat,
+      radial-gradient(circle, var(--c) 45%, transparent 55%) left .4cqw top .4cqw / .45cqw .45cqw no-repeat,
+      radial-gradient(circle, var(--c) 45%, transparent 55%) right .4cqw top .4cqw / .45cqw .45cqw no-repeat,
+      radial-gradient(circle, var(--c) 45%, transparent 55%) left .4cqw bottom .4cqw / .45cqw .45cqw no-repeat,
+      radial-gradient(circle, var(--c) 45%, transparent 55%) right .4cqw bottom .4cqw / .45cqw .45cqw no-repeat; }
+  /* Striped band: a 6px ring just outside the border (mask cuts out the middle) */
+  .frame.patterned::before { content: ''; position: absolute; inset: -9px; padding: 6px; pointer-events: none; border-radius: inherit;
+    background: repeating-linear-gradient(45deg, #5a2a3a 0 4px, #43304f 4px 8px);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; }
+  .frame.dark { background: var(--ui-panel); color: var(--ui-text); }
+  .frame.dark .msg b, .frame.dark p { color: var(--ui-text); }
   .card.outro span { align-self: center; padding: .2cqw 1cqw; border-radius: 1cqw; background: #D4AF37; color: #222; font-size: 1.2cqw; font-weight: bold; }
   .card.outro p { margin: 0; color: #444; }
   /* Rider subtitle (after the verdict text) */
@@ -197,13 +255,14 @@
   <div id="casePanel" class="panel" hidden></div>
   <div id="votePanel" class="panel" hidden></div>
   <div id="chat" class="panel" hidden>
-    <div class="title">재판 기록</div>
+    <div class="frame-tab"><b>재판 기록</b></div>
     <div id="msgs"></div>
     <input id="chatInput" readonly placeholder="메시지 입력">
     <div id="notice"></div>
   </div>
   <div id="closeup"></div>
   <div id="sub"></div>
+  <div id="dialog" hidden><span class="tag"><b></b></span><p></p><i class="more"></i></div>
   <div id="roleOverlay" class="overlay" hidden>
     <div class="card">
       <h1>연애 재판</h1>
@@ -243,6 +302,9 @@ const CLOSING_LINE = '이상으로 재판을 마칩니다. 폐정합니다.';
 // Outro card (stage 13)
 const OUTRO = { label: '다음 사건', title: '커피 한 잔 더치페이 사건', note: '곧 개정' };
 const NAV_LABELS = { prev: '이전 단계', next: '다음 단계' }; // arrow buttons (screen readers)
+const PANEL_TABS = { case: '사건명', outro: '다음 재판' }; // ribbon tabs on framed panels
+// Words shown in the highlight color inside the dialogue box
+const HIGHLIGHT_WORDS = ['12시간', '열두 시간', '배터리', '일곱 통', '연락', '걱정', '고의'];
 const CASE = {
   title: '12시간 연락두절 사건',
   summary: '교제 1년 차 커플. 친구 모임에 간 A는 휴대폰 배터리가 방전된 채 잠들어 12시간 동안 연락이 끊겼다. B는 밤새 부재중 전화를 남기고 A의 친구들에게까지 연락했다. 다음 날 연락이 닿자 B는 미리 말했어야 한다며 화를 냈고, A는 일부러 그런 것도 아닌데 너무 몰아붙인다고 맞섰다.',
@@ -339,6 +401,19 @@ const PROPS = [
 // scene: 'court' (top view) or 'closeup'
 const NAMEPLATE_TEXT = { judge: '재판장', prosecutor: '검사', defender: '변호인' };
 const NAMEPLATE_GOLD = { light: '#E8C766', base: '#D4AF37', dark: '#B8922B' };
+// UI tokens (gold = NAMEPLATE_GOLD). Text sizes are in cqw so they scale with the video resolution
+const UI_PALETTE = { text: '#F5ECD7', panelDark: 'rgba(18,14,12,0.80)', gold: NAMEPLATE_GOLD,
+                     tagJudge: '#2E4A7A', tagProsecutor: '#8E2A3A', tagDefender: '#1F6F6B', tagJuror: '#5B5B4E' };
+const UI_FONT = { body: '"Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif',
+                  title: '"Noto Serif KR", "Batang", "AppleMyungjo", serif' };
+// Dialogue: 'box' = bottom dialogue box with name tag; 'subtitle' = the old one-line subtitle
+const DIALOGUE_MODE = 'box';
+const DIALOGUE_BOX = { width: 92, height: 24, bottom: 3, fontSize: 2.2 }; // % of container; fontSize in cqw
+const TYPEWRITER_MS_PER_CHAR = 35; // sped up automatically to finish within the speech
+const HIGHLIGHT_COLOR = '#F0B24A';
+const CHAT_STAGES = [8];           // stages that show the center trial log; [5, 6, 7, 8] = old behavior
+const FRAME_PATTERN = true;        // striped band outside the panel frames
+const FRAME_FILL = 'keep';         // 'keep' = each panel's own fill | 'dark' = panelDark + UI text color
 const NAMEPLATE_SIDE_MODE = 'rotated'; // 'rotated' | 'stacked' (upright vertical text, no rotation)
 const NAMEPLATE_ROTATION = { prosecutor: 270, defender: 90 }; // degrees, 'rotated' mode only
 const NAMEPLATES = [
@@ -526,8 +601,27 @@ const setMark = (id, text) => els[id].querySelector('.mark').textContent = text;
 let VERDICT = null; // { result, counts, votes } — input for reading / AI verdict text
 
 const tag = (t, text) => Object.assign(document.createElement(t), { textContent: text });
-casePanel.append(tag('h2', CASE.title), tag('p', CASE.summary), tag('ol'));
-CASE.issues.forEach(t => casePanel.lastChild.append(tag('li', t)));
+const caseBody = Object.assign(tag('div'), { className: 'scroll' });
+caseBody.append(tag('h2', CASE.title), tag('p', CASE.summary), tag('ol'));
+CASE.issues.forEach(t => caseBody.lastChild.append(tag('li', t)));
+casePanel.append(caseBody);
+
+// UI tokens → CSS variables
+[['--ui-text', UI_PALETTE.text], ['--ui-panel', UI_PALETTE.panelDark], ['--tag-judge', UI_PALETTE.tagJudge],
+ ['--font-body', UI_FONT.body], ['--font-title', UI_FONT.title], ['--hl', HIGHLIGHT_COLOR],
+ ['--dlg-w', DIALOGUE_BOX.width + '%'], ['--dlg-h', DIALOGUE_BOX.height + '%'], ['--dlg-bottom', DIALOGUE_BOX.bottom + '%'],
+ ['--dlg-font', DIALOGUE_BOX.fontSize + 'cqw']].forEach(([k, v]) => stage.style.setProperty(k, v));
+const TAG_COLORS = { judge: UI_PALETTE.tagJudge, prosecutor: UI_PALETTE.tagProsecutor, defender: UI_PALETTE.tagDefender };
+// Framed panels: chat (its tab is in the HTML), case intro, vote, outro card
+const outroCard = endOverlay.querySelector('.card');
+const frameTab = text => { const t = Object.assign(tag('div'), { className: 'frame-tab' }); t.append(tag('b', text)); return t; };
+casePanel.prepend(frameTab(PANEL_TABS.case));
+outroCard.prepend(frameTab(PANEL_TABS.outro));
+[chat, casePanel, votePanel, outroCard].forEach(el => {
+  el.classList.add('frame');
+  el.classList.toggle('patterned', FRAME_PATTERN);
+  el.classList.toggle('dark', FRAME_FILL === 'dark');
+});
 
 PROPS.forEach(p => {
   const d = document.createElement('div');
@@ -735,8 +829,12 @@ async function say(id, text, ms, g) {
   await stepForth(id, g);
   if (g !== gen) return;
   const m = addMsg('msg cur', tag('b', AVATARS.find(a => a.id === id).label), tag('span', text));
+  const inBox = !seatOf(id).color; // judge/prosecutor/defender speak in the dialogue box; jurors only in the chat
+  if (inBox) speech(id, text, ms);
   await talk(els[id], ms, g);
-  if (g === gen) m.classList.remove('cur');
+  if (g !== gen) return;
+  m.classList.remove('cur');
+  if (inBox) lineDone();
 }
 // Speech bubble icon + mouth movement
 async function talk(el, ms, g) {
@@ -755,6 +853,46 @@ async function sayAll(lines, g) {
     if (g !== gen) return;
   }
 }
+// ----- Dialogue: bottom box (DIALOGUE_MODE 'box') or the old one-line subtitle -----
+const dialog = document.getElementById('dialog');
+const dialogTag = dialog.querySelector('.tag');
+const dialogText = dialog.querySelector('p');
+// Lines that were subtitles before (stage names, verdict lines, closing line). id = speaker (name tag), none = narration
+function caption(text, { id = null, rider = false, ms = 0 } = {}) {
+  if (DIALOGUE_MODE === 'subtitle') {
+    sub.classList.toggle('rider', rider);
+    sub.textContent = text;
+    return;
+  }
+  loop('typewriter', false);
+  dialog.hidden = !text;
+  dialog.classList.remove('done');
+  dialog.classList.toggle('rider', rider);
+  dialogTag.hidden = !id;
+  if (id) {
+    dialogTag.firstChild.textContent = seatOf(id).label;
+    dialogTag.style.setProperty('--tag', TAG_COLORS[id] ?? UI_PALETTE.tagJuror);
+  }
+  const hl = [...text].map(() => false);
+  HIGHLIGHT_WORDS.forEach(w => { for (let i = text.indexOf(w); i >= 0; i = text.indexOf(w, i + 1)) hl.fill(true, i, i + w.length); });
+  // Hidden chars keep their space, so the text wraps where it will end up
+  const chars = [...text].map((ch, i) => Object.assign(tag('span', ch), { className: hl[i] ? 'hl' : '' }));
+  dialogText.replaceChildren(...chars);
+  if (!id && !rider) return; // narration shows at once
+  chars.forEach(c => c.style.visibility = 'hidden');
+  let k = 0;
+  const step = ms ? Math.min(TYPEWRITER_MS_PER_CHAR, ms * .85 / chars.length) : TYPEWRITER_MS_PER_CHAR;
+  loop('typewriter', chars.length > 0, () => {
+    chars[k++].style.visibility = '';
+    if (k >= chars.length) loop('typewriter', false);
+  }, step);
+}
+// New lines that only exist in the dialogue box (the old subtitle mode never showed them)
+const speech = (id, text, ms) => DIALOGUE_MODE === 'box' && caption(text, { id, ms });
+// Speech finished: show the blinking ▼ (box mode)
+const lineDone = () => dialog.classList.add('done');
+const chatShownAt = i => CHAT_STAGES.includes(i === 9 ? 8 : i); // stage 9 (filter demo) belongs to the discussion
+
 function setInputEnabled(on) {
   chatInput.disabled = !on;
   chatInput.placeholder = on ? '메시지 입력' : '토론 단계에서 입력할 수 있어요';
@@ -890,8 +1028,7 @@ function showVoteResult() {
 function leaveCloseup() {
   setTalking(closeJudge, false);
   closeup.classList.remove('show');
-  sub.classList.remove('rider');
-  sub.textContent = '';
+  caption('');
 }
 let pickRole = null; // stage 0: resolves when the juror card or ▶ is pressed
 
@@ -917,7 +1054,7 @@ const STAGES = [
       await walk(els[id], seatOf(id), g);
       if (g === gen) sit([id], true);
     }));
-    if (g === gen) sub.textContent = '배심원단과 양측이 모두 입장했습니다';
+    if (g === gen) caption('배심원단과 양측이 모두 입장했습니다');
   } },
   { name: '재판장 입장', run: async g => {
     sit(OTHERS, false);
@@ -928,29 +1065,34 @@ const STAGES = [
     sit(['judge'], true);
     els.judge.classList.add('talking');
     setTalking(els.judge, true);
-    const t = speak('지금부터 개정합니다');
+    const line = '지금부터 개정합니다';
+    speech('judge', line);
+    const t = speak(line);
     await wait(600);
     if (g === gen) sit(OTHERS, true);
     await t;
     if (g !== gen) return;
+    lineDone();
     els.judge.classList.remove('talking');
     setTalking(els.judge, false);
   } },
-  { name: '사건을 소개합니다', run: async g => {
+  { name: '사건을 소개합니다', speaker: 'judge', run: async g => { // the stage name is the judge's line
     casePanel.hidden = false;
     setTalking(els.judge, true);
     await wait(2500);
-    if (g === gen) setTalking(els.judge, false);
+    if (g !== gen) return;
+    setTalking(els.judge, false);
+    lineDone();
   } },
   { name: '모두진술', run: async g => {
     casePanel.hidden = true;
-    chat.hidden = false;
     setInputEnabled(false);
     await sayAll(['prosecutor', 'defender'].map(id => ({ id, text: OPENING[id] })), g);
   } },
   { name: '쟁점별 주장·반박', run: async g => {
     for (const { title, lines } of ISSUE_DEBATE) {
       addMsg('msg sys', tag('span', title));
+      speech(null, title); // shown while the first speaker steps forward
       await sayAll(lines, g);
       if (g !== gen) return;
     }
@@ -971,6 +1113,9 @@ const STAGES = [
     const buttons = OPTIONS.map(o => tag('button', OPTION_LABELS[o]));
     votePanel.replaceChildren(tag('h2', '평결을 선택해 주세요'), ...buttons);
     votePanel.hidden = false;
+    // List-menu cursor follows the mouse; clicking confirms as before
+    buttons.forEach(b => b.onmouseenter = () => buttons.forEach(x => x.classList.toggle('sel', x === b && !b.disabled)));
+    buttons[0].classList.add('sel');
     votes[ME] = await new Promise(r => buttons.forEach((b, i) => b.onclick = () => {
       buttons.forEach(x => x.disabled = true);
       b.classList.add('chosen');
@@ -1001,11 +1146,11 @@ const STAGES = [
     dbg('reading start,', lines.length, 'utterances');
     for (const [i, line] of lines.entries()) {
       if (g !== gen) return;
-      if (i === lines.length - 1) sub.classList.add('rider');
-      sub.textContent = line;
+      caption(line, i === lines.length - 1 ? { rider: true } : { id: 'judge' });
       setTalking(closeJudge, true);
       const why = await speak(line);
       setTalking(closeJudge, false);
+      lineDone();
       dbg('utterance', i + 1, 'done:', why);
     }
     if (g !== gen) return;
@@ -1021,10 +1166,11 @@ const STAGES = [
     dbg('reaction:', winner, 'wins');
     await Promise.all([celebrate(winner, g), lament(loser, g), wait(REACTION.totalMs)]);
     if (g !== gen) return;
-    sub.textContent = CLOSING_LINE;
+    caption(CLOSING_LINE, { id: 'judge' });
     gavel(1, g);
     await talk(els.judge, 2500, g);
     if (g !== gen) return;
+    lineDone();
     sit(['judge', ...OTHERS], false);
     await wait(600);
     if (g !== gen) return;
@@ -1042,8 +1188,8 @@ async function runStage(i) {
   cur = i;
   prevBtn.disabled = i === 0;
   nextBtn.disabled = true;
-  sub.classList.remove('rider');
-  sub.textContent = s.name;
+  caption(s.name, { id: s.speaker });
+  if (i >= 5 && i <= 9) chat.hidden = !chatShownAt(i);
   dbg('stage', i, 'start');
   const runs = [s.run(g).then(() => 'done')];
   if (!s.waitsForInput) runs.push(wait(SAFETY_UNLOCK_MS).then(() => 'safety timer'));
@@ -1080,10 +1226,9 @@ function buildState(i) {
   closeup.classList.remove('show');
   closeJudge.className = 'avatar';
   gavelEl.classList.remove('up');
-  sub.classList.remove('rider');
-  sub.textContent = '';
+  caption('');
   casePanel.hidden = i !== 5;
-  chat.hidden = i < 6 || i > 10;
+  chat.hidden = !(i >= 6 && i <= 10 && chatShownAt(i - 1)); // start of i = end of i - 1
   setInputEnabled(i === 9 || i === 10);
   msgs.textContent = chatInput.value = notice.textContent = '';
   const log = [];
