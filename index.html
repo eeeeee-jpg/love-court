@@ -46,7 +46,8 @@
   .plate { position: absolute; left: 50%; top: 6%; transform: translateX(-50%); white-space: nowrap; font-size: 1.1cqw;
            padding: 0 .5cqw; background: #f3e6c4; color: #3e2612; border: .15cqw solid #a07a3a; }
   /* Same background on top of the judge, clipped to the image desk, so the desk hides the lower body */
-  #deskClip { position: absolute; inset: 0; z-index: 30; pointer-events: none; }
+  #deskClip, #closeupDeskClip { position: absolute; inset: 0; z-index: 30; pointer-events: none; }
+  #closeupDeskClip { background: center / cover no-repeat; }
 
   /* Align feet with margin instead of transform: no stacking context, so labels can rise above props */
   .avatar { position: absolute; --w: calc(4cqw * var(--scale)); width: var(--w); margin: calc(var(--w) * -4 / 3) 0 0 calc(var(--w) / -2);
@@ -67,8 +68,9 @@
   #closeup { position: absolute; inset: 0; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .8s;
              background: #3a2f45 center / cover no-repeat; }
   #closeup.show { opacity: 1; }
-  #closeup .avatar { --w: 16cqw; left: 50%; top: 92%; }
   #closeup .label { font-size: 2cqw; }
+  #closeup .avatar svg { animation: breathe 2s ease-in-out infinite alternate; }
+  @keyframes breathe { to { translate: 0 1.5px; } }
 
   #sub { position: absolute; z-index: 210; left: 50%; bottom: 3%; transform: translateX(-50%); max-width: 90%;
          font-size: 1.8cqw; text-align: center; background: rgba(0,0,0,.7); padding: .4cqw 1.2cqw; border-radius: 4px; }
@@ -169,7 +171,14 @@
 // ===== Config =====
 const ASPECT_RATIO = 3 / 2; // bg-top.png is 1536x1024
 const BG_TOPVIEW = 'bg-top.png';
-const BG_CLOSEUP = 'bg.jpg';
+const BG_CLOSEUP = 'bg-front.png'; // 3:2, same as the container
+// Close-up judge (seated sprite): x center and headTop (% of image), scale × base avatar width (4cqw).
+// scale 2.64 keeps the shoulders inside the chair back (x 44~56); headTop 30 puts the forearms/hands on the desk top (~55)
+const CLOSEUP_JUDGE = { x: 50, headTop: 30, scale: 2.64 };
+// Forearms resting on the desk, in sprite pixels (12 wide): y = forearm row, handX = left x of each 2x2 hand
+const CLOSEUP_ARMS = { y: 18, handX: [3, 7] };
+// Close-up desk area in the image (%): redrawn above the judge so the desk hides the lower body
+const CLOSEUP_DESK_CLIP = { x: 14, y: 55, w: 71, h: 35 };
 const WALK_SPEED = 30;   // % moved per second
 const MOUTH_MS = 150;
 const STEP_MS = 200;     // walk frame interval
@@ -324,8 +333,28 @@ const SPRITES = {
     '.sccccccccs.',
     '..cccccccc..',
   ],
+  seated: [ // close-up only: front head + longer robe, no legs; arms are added in spriteSVG
+    '...hhhhhh...',
+    '..hhhhhhhh..',
+    '..hssssssh..',
+    '..ssssssss..',
+    '..sEssssEs..',
+    '..ssssssss..',
+    '..ssssssss..',
+    '...ssssss...',
+    '....ssss....',
+    '..cccAAccc..',
+    '.ccccAAcccc.',
+    '.ccccAAcccc.',
+    '.cccccccccc.',
+    '.cccccccccc.',
+    '.cccccccccc.',
+    '.cccccccccc.',
+    '.cccccccccc.',
+    '.cccccccccc.',
+  ],
 };
-const MOUTH = { front: [5, 6], side: [8, 5] }; // back view has no mouth
+const MOUTH = { front: [5, 6], side: [8, 5], seated: [5, 6] }; // back view has no mouth
 
 function spriteSVG(view, pal, mirror) {
   const colors = { h: '#3b2a20', s: '#f1c9a0', E: '#222', p: '#444a55', ...pal };
@@ -335,18 +364,20 @@ function spriteSVG(view, pal, mirror) {
     if (colors[ch]) body += r(x, y, 1, 1, colors[ch]);
   }));
   const p = colors.p;
-  // legA standing, legB walk frame 2, legS side sitting (thighs forward)
-  body += view === 'side'
+  // legA standing, legB walk frame 2, legS side sitting (thighs forward); seated: forearms + hands instead of legs
+  const { y: ay, handX } = CLOSEUP_ARMS;
+  body += view === 'seated'
+    ? r(0, ay, 12, 1, colors.c) + handX.map(hx => r(hx, ay, 2, 2, colors.s)).join('')
+    : view === 'side'
     ? r(4, 14, 2, 2, p, 'legA') + r(3, 14, 1, 2, p, 'legB') + r(6, 14, 1, 2, p, 'legB') + r(6, 13, 3, 1, p, 'legS') + r(8, 14, 1, 2, p, 'legS')
     : r(2, 15, 3, 1, p, 'legA') + r(7, 15, 3, 1, p, 'legA') + r(3, 15, 2, 1, p, 'legB') + r(8, 15, 2, 1, p, 'legB');
   const m = MOUTH[view];
   if (m) body += r(m[0], m[1], 2, 1, '#7a3b2e', 'closed') + r(m[0], m[1], 2, 2, '#4a1010', 'open');
-  return `<svg viewBox="0 0 12 16">${mirror ? `<g transform="matrix(-1 0 0 1 12 0)">${body}</g>` : body}</svg>`;
+  return `<svg viewBox="0 0 12 ${view === 'seated' ? ay + 2 : 16}">${mirror ? `<g transform="matrix(-1 0 0 1 12 0)">${body}</g>` : body}</svg>`;
 }
 
-function makeAvatar(a) {
+function makeAvatar(a, view = a.color ? 'back' : a.id === 'judge' ? 'front' : 'side') {
   const el = document.createElement('div');
-  const view = a.color ? 'back' : a.id === 'judge' ? 'front' : 'side';
   el.dataset.view = view;
   el.className = 'avatar ' + view;
   const pal = a.color ? { c: a.color, A: a.color } : PALETTES[a.id];
@@ -397,18 +428,26 @@ PROPS.forEach(p => {
   if (p.plate) d.append(Object.assign(tag('span', p.plate), { className: 'plate' }));
   court.appendChild(d);
 });
+const clipInset = r => `inset(${r.y}% ${100 - r.x - r.w}% ${100 - r.y - r.h}% ${r.x}%)`;
 const deskClip = Object.assign(document.createElement('div'), { id: 'deskClip' });
-deskClip.style.clipPath = `inset(${DESK_CLIP.y}% ${100 - DESK_CLIP.x - DESK_CLIP.w}% ${100 - DESK_CLIP.y - DESK_CLIP.h}% ${DESK_CLIP.x}%)`;
+deskClip.style.clipPath = clipInset(DESK_CLIP);
 court.appendChild(deskClip);
 
 const els = {};
 AVATARS.forEach(a => court.appendChild(els[a.id] = makeAvatar(a)));
-const closeJudge = makeAvatar(AVATARS[0]);
+const closeJudge = makeAvatar(AVATARS[0], 'seated');
 closeup.appendChild(closeJudge);
+// marginTop 0: top is the head top, not the feet (the seated sprite is taller than 4:3)
+Object.assign(closeJudge.style, { left: CLOSEUP_JUDGE.x + '%', top: CLOSEUP_JUDGE.headTop + '%', marginTop: '0' });
+closeJudge.style.setProperty('--w', 4 * CLOSEUP_JUDGE.scale + 'cqw');
+closeJudge.firstChild.style.zIndex = 31; // above the desk clip layer (30) so the hands on the desk edge stay visible
+const closeupDeskClip = Object.assign(document.createElement('div'), { id: 'closeupDeskClip' });
+closeupDeskClip.style.clipPath = clipInset(CLOSEUP_DESK_CLIP);
+closeup.appendChild(closeupDeskClip);
 
 // Close-up background: keep the solid color if the image is missing
 const probe = new Image();
-probe.onload = () => closeup.style.backgroundImage = `url("${BG_CLOSEUP}")`;
+probe.onload = () => closeup.style.backgroundImage = closeupDeskClip.style.backgroundImage = `url("${BG_CLOSEUP}")`;
 probe.src = BG_CLOSEUP;
 // Top-view background: keep the fallback floor if the image is missing
 const topProbe = new Image();
