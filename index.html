@@ -41,10 +41,24 @@
   .prop.desk.v.r { background: linear-gradient(270deg, #8a5a34 0 58%, #2a170b 58% 62%, #4a2a16 62%); }
   .prop.desk.v::after { left: 70%; right: 12%; top: 30%; height: 40%; }
   .prop.desk.v.r::after { left: 12%; right: 70%; }
-  .prop.desk.v .plate { left: 29%; top: 40%; font-size: .8cqw; padding: 0 .3cqw; }
-  .prop.desk.v.r .plate { left: 71%; }
-  .plate { position: absolute; left: 50%; top: 6%; transform: translateX(-50%); white-space: nowrap; font-size: 1.1cqw;
-           padding: 0 .5cqw; background: #f3e6c4; color: #3e2612; border: .15cqw solid #a07a3a; }
+  /* Nameplate: brushed gold base around a black plate with a double gold border. Size/position/rotation set in JS from NAMEPLATES */
+  .nameplate { position: absolute; z-index: 98; /* above desks, avatars and desk clips; below labels (100) */ display: flex; padding: .18em; pointer-events: none; border-radius: .12em;
+               transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+               background: linear-gradient(var(--gold-dark), var(--gold-light) 50%, var(--gold-dark));
+               box-shadow: 0 .05em .15em rgba(0,0,0,.6); }
+  .nameplate b { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; background: #111;
+                 border: .06em solid var(--gold-base); box-shadow: inset 0 0 0 .08em #111, inset 0 0 0 .13em var(--gold-dark);
+                 font: 700 1em "Noto Serif KR", "Batang", "AppleMyungjo", serif; letter-spacing: .2em; white-space: nowrap; }
+  /* Gold gradient text; drop-shadow instead of text-shadow, which would paint over background-clip text */
+  .nameplate span { margin-right: -.2em; background: linear-gradient(var(--gold-light), var(--gold-dark));
+                    -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 1px 0 rgba(0,0,0,.9)); }
+  .nameplate.stacked b { writing-mode: vertical-rl; text-orientation: upright; }
+  .nameplate.stacked span { margin: 0 0 -.2em; }
+  /* End ornaments: simple gold curls, only on large plates */
+  .nameplate.ornate b::before, .nameplate.ornate b::after { content: ''; position: absolute; top: 50%; width: .55em; height: .55em;
+    border: .07em solid; border-color: var(--gold-base) transparent transparent var(--gold-base); border-radius: 50%; }
+  .nameplate.ornate b::before { left: .35em; transform: translateY(-50%) rotate(-45deg); }
+  .nameplate.ornate b::after { right: .35em; transform: translateY(-50%) rotate(135deg); }
   /* Same background on top of the judge, clipped to the image desk, so the desk hides the lower body */
   #deskClip, #closeupDeskClip { position: absolute; inset: 0; z-index: 30; pointer-events: none; }
   #closeupDeskClip { background: center / cover no-repeat; }
@@ -212,13 +226,25 @@ const AVATARS = [
 ];
 // Props: top-left x, y and w, h (%). Without z, depth comes from the bottom edge (y+h) → in front of a seat it hides the lower body
 const PROPS = [
-  { cls: '',        x: 43,    y: 21,   w: 14, h: 6, z: 31, plate: '재판장' }, // nameplate only, on the image's judge desk
   { cls: 'chair',   x: 10.5,  y: 46,   w: 4,  h: 7.6, z: 51 },        // prosecutor chair (behind avatar)
-  { cls: 'desk v',  x: 19.25, y: 42.7, w: 5.5, h: 18.6, plate: '검사' }, // vertical desk: right in front of avatar (center side)
+  { cls: 'desk v',  x: 19.25, y: 42.7, w: 5.5, h: 18.6 },             // vertical desk: right in front of avatar (center side)
   { cls: 'chair r', x: 85.5,  y: 46,   w: 4,  h: 7.6, z: 51 },        // defender chair
-  { cls: 'desk v r', x: 75.25, y: 42.7, w: 5.5, h: 18.6, plate: '변호인' },
+  { cls: 'desk v r', x: 75.25, y: 42.7, w: 5.5, h: 18.6 },
   { cls: 'bench',   x: 32,    y: 64.3, w: 36, h: 6.8 },               // juror back row
   { cls: 'bench',   x: 26,    y: 75.3, w: 48, h: 6.8, z: 99 },        // juror front row (ends above the bottom wall at ~85, below label z 100)
+];
+// Nameplates (plate is 4.5:1). x, y = center (% of image), w = plate width (% of container width),
+// h = optional plate height (same unit) to fit a narrow spot; text size follows h.
+// scene: 'court' (top view) or 'closeup'
+const NAMEPLATE_TEXT = { judge: '재판장', prosecutor: '검사', defender: '변호인' };
+const NAMEPLATE_GOLD = { light: '#E8C766', base: '#D4AF37', dark: '#B8922B' };
+const NAMEPLATE_SIDE_MODE = 'rotated'; // 'rotated' | 'stacked' (upright vertical text, no rotation)
+const NAMEPLATE_ROTATION = { prosecutor: 270, defender: 90 }; // degrees, 'rotated' mode only
+const NAMEPLATES = [
+  { scene: 'court',   role: 'judge',      x: 50,   y: 25.8, w: 8 },              // front edge of the image's judge desk (27 hangs onto the dais)
+  { scene: 'court',   role: 'prosecutor', x: 23.6, y: 52, w: 9, h: 1.6 }, // dark front band (x 22.7~24.5), desk length center
+  { scene: 'court',   role: 'defender',   x: 76.4, y: 52, w: 9, h: 1.6 }, // dark front band (x 75.5~77.3), desk length center
+  { scene: 'closeup', role: 'judge',      x: 50,   y: 70, w: 18, ornament: true }, // top of the desk's center front panel
 ];
 // Center panel (case intro, trial log, vote): between the judge bench and back-row juror icons
 const PANEL = { x: 32, y: 21, w: 36, h: 20 }; // ends above the back-row juror bubbles (~42)
@@ -425,7 +451,6 @@ PROPS.forEach(p => {
   d.className = 'prop ' + p.cls;
   Object.assign(d.style, { left: p.x + '%', top: p.y + '%', width: p.w + '%', height: p.h + '%',
                            zIndex: p.z ?? Math.round(p.y + p.h) });
-  if (p.plate) d.append(Object.assign(tag('span', p.plate), { className: 'plate' }));
   court.appendChild(d);
 });
 const clipInset = r => `inset(${r.y}% ${100 - r.x - r.w}% ${100 - r.y - r.h}% ${r.x}%)`;
@@ -444,6 +469,21 @@ closeJudge.firstChild.style.zIndex = 31; // above the desk clip layer (30) so th
 const closeupDeskClip = Object.assign(document.createElement('div'), { id: 'closeupDeskClip' });
 closeupDeskClip.style.clipPath = clipInset(CLOSEUP_DESK_CLIP);
 closeup.appendChild(closeupDeskClip);
+
+Object.entries(NAMEPLATE_GOLD).forEach(([k, v]) => stage.style.setProperty('--gold-' + k, v));
+NAMEPLATES.forEach(n => {
+  const rot = NAMEPLATE_ROTATION[n.role];
+  const stacked = rot !== undefined && NAMEPLATE_SIDE_MODE === 'stacked';
+  const h = n.h ?? n.w / 4.5; // cqw = % of container width
+  const el = tag('div');
+  el.className = 'nameplate' + (stacked ? ' stacked' : '') + (n.ornament ? ' ornate' : '');
+  el.append(tag('b'));
+  el.firstChild.append(tag('span', NAMEPLATE_TEXT[n.role]));
+  Object.assign(el.style, { left: n.x + '%', top: n.y + '%', width: (stacked ? h : n.w) + 'cqw',
+                            height: (stacked ? n.w : h) + 'cqw', fontSize: h * 0.5 + 'cqw' });
+  if (rot !== undefined && !stacked) el.style.setProperty('--rot', rot + 'deg');
+  (n.scene === 'closeup' ? closeup : court).append(el);
+});
 
 // Close-up background: keep the solid color if the image is missing
 const probe = new Image();
