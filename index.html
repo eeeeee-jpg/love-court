@@ -281,6 +281,11 @@
   /* Sweat drop drawn with CSS, above the label */
   .react { position: absolute; bottom: 100%; left: 50%; translate: -50% 0; margin-bottom: .4em; }
   .react.sweat { width: .9em; height: .9em; background: #7fc8ff; border: .08em solid #fff; border-radius: 0 50% 50% 50%; rotate: 45deg; }
+  /* Stage 0 logo: centered over the dark overlay, clicked to continue */
+  #logo { position: absolute; inset: 0; pointer-events: none; }
+  #logo[hidden] { display: none; }
+  #logo img { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: var(--logo-w); max-height: var(--logo-w);
+              object-fit: contain; pointer-events: auto; cursor: pointer; }
   .shake { animation: shake .3s; }
   @keyframes shake { 25% { transform: translateX(-.4cqw); } 75% { transform: translateX(.4cqw); } }
 </style>
@@ -303,6 +308,7 @@
   <div id="cutin" hidden><div class="dim"></div><div class="flash"></div>
     <div class="band"><div class="who"></div><div class="burst"><b></b></div></div></div>
   <div id="roleOverlay" class="overlay" hidden>
+    <div id="logo" hidden><img alt=""></div>
     <div class="card">
       <h1>연애 재판</h1>
       <p id="caseTitle"></p>
@@ -520,6 +526,12 @@ const REACTION = {
 const OPENING_MS = 4000;
 const JUROR_MS = 3000;
 const MAX_MSGS = 5;
+// Stage 0 logo (logo.png) before the role cards: fades in and waits for a click, then shrinks out and the cards appear
+const LOGO_INTRO_ENABLED = true;
+const LOGO_NEXT_BUTTON_ENABLED = false; // true: ▶ / → on the logo works like a click
+const LOGO_WIDTH_PCT = 80;              // % of the container width (and max % of its height)
+const LOGO_FADEIN_MS = 600;
+const LOGO_OUT_MS = 1000;
 // h hair, s skin, E eyes, c clothes, A accent (collar/tie)
 const PALETTES = {
   judge:      { c: '#1a1a1a', A: '#eeeeee', p: '#111111' },
@@ -649,6 +661,11 @@ const notice = document.getElementById('notice');
 const votePanel = document.getElementById('votePanel');
 const roleOverlay = document.getElementById('roleOverlay');
 const endOverlay = document.getElementById('endOverlay');
+const roleCard = roleOverlay.querySelector('.card');
+const logoEl = document.getElementById('logo');
+const logoImg = logoEl.firstChild;
+logoImg.src = 'logo.png';
+stage.style.setProperty('--logo-w', LOGO_WIDTH_PCT + '%');
 stage.style.setProperty('--ar', ASPECT_RATIO);
 stage.style.setProperty('--scale', AVATAR_SCALE);
 document.querySelectorAll('.panel').forEach(el => Object.assign(el.style,
@@ -1261,7 +1278,31 @@ function leaveCloseup() {
   caption('');
 }
 let pickRole = null; // stage 0: resolves when the juror card or ▶ is pressed
-let lineSkip = null; // during a cut-in line: ▶ completes the typing, then ends the hold
+let lineSkip = null; // during a cut-in line: ▶ completes the typing, then ends the hold (logo: ▶ if LOGO_NEXT_BUTTON_ENABLED)
+// Stage 0: logo alone on the dark overlay; stays until clicked, then shrinks out and the role cards show
+async function logoIntro(g) {
+  roleCard.style.visibility = 'hidden';
+  logoEl.hidden = false;
+  logoEl.animate([{ opacity: 0 }, { opacity: 1 }], { duration: LOGO_FADEIN_MS, fill: 'forwards' });
+  nextBtn.disabled = !LOGO_NEXT_BUTTON_ENABLED;
+  await new Promise(r => {
+    logoImg.onclick = r;
+    if (LOGO_NEXT_BUTTON_ENABLED) lineSkip = r;
+  });
+  logoImg.onclick = lineSkip = null; // later clicks are ignored
+  if (g !== gen) return;
+  nextBtn.disabled = true;
+  await finished(logoEl.animate([{ opacity: 1, scale: 1 }, { opacity: 0, scale: .5 }],
+                                { duration: LOGO_OUT_MS, easing: 'ease-in', fill: 'forwards' }));
+  if (g !== gen) return;
+  nextBtn.disabled = false; // ▶ picks the juror role, as before
+  endLogo();
+}
+function endLogo() {
+  logoEl.getAnimations().forEach(an => an.cancel());
+  logoEl.hidden = true;
+  roleCard.style.visibility = '';
+}
 
 // Stages 0~13. name is shown as a subtitle when the stage starts (empty = no subtitle).
 // autoNext: chain into the next stage without ▶. waitsForInput: no safety timer (waits for the user)
@@ -1269,7 +1310,9 @@ const STAGES = [
   { name: '', autoNext: true, waitsForInput: true, run: async g => { // 0 role select
     roleOverlay.classList.remove('fade');
     roleOverlay.hidden = false;
-    nextBtn.disabled = false; // ▶ also picks the juror role
+    nextBtn.disabled = false; // ▶ picks the juror role (logoIntro handles ▶ while the logo is up)
+    if (LOGO_INTRO_ENABLED) await logoIntro(g);
+    if (g !== gen) return;
     await new Promise(r => pickRole = r);
     pickRole = null;
     if (g !== gen) return;
@@ -1469,6 +1512,7 @@ function buildState(i) {
   gauge.hidden = !(i >= 7 && i <= 10); // stage 6 shows it when it starts
   setGauge(gaugeAt(i), false);
   roleOverlay.hidden = endOverlay.hidden = true;
+  endLogo();
   closeup.classList.remove('show');
   closeJudge.className = 'avatar';
   gavelEl.classList.remove('up');
