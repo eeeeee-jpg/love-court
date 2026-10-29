@@ -207,7 +207,68 @@
 </div>
 
 <script>
-// ===== Config =====
+// ===== SCENARIO CONFIG: dialogue, nicknames, issues, votes, verdict text and other screen text =====
+const ME = 'j1'; // juror played by "me"
+const OPTIONS = ['notGuilty', 'demandJustified', 'mutualFault'];
+const OPTION_LABELS = { notGuilty: 'A 무죄', demandJustified: 'B 요구 정당', mutualFault: '쌍방 과실' };
+const OPTION_SHORT = { notGuilty: 'A', demandJustified: 'B', mutualFault: '쌍방' };
+const NPC_VOTES = { j2: 'notGuilty', j3: 'notGuilty', j4: 'demandJustified', j5: 'notGuilty', j6: 'mutualFault', j7: 'notGuilty' };
+// Verdict text per option. Later replaced by AI-generated text (VERDICT as input)
+const JUDGMENT_TEXTS = {
+  notGuilty: '주문. 본 법정은 피고인 A가 전 연인과 SNS 연결을 유지한 사실을 인정한다. 그러나 이는 이미 종료된 관계의 형식적 연결에 불과하다고 판단한다. 이에 피고인 A에게 무죄를 선고한다.',
+  demandJustified: '주문. 본 법정은 피고인 A가 전 연인과 SNS 연결을 유지한 사실을 인정한다. 현 연인 B가 느낀 불안은 합리적인 범위의 감정으로 판단한다. 이에 B의 정리 요구는 정당하다고 평결한다.',
+  mutualFault: '주문. 본 법정은 피고인 A가 전 연인과 SNS 연결을 유지한 사실을 인정한다. 다만 B 또한 대화 대신 일방적 요구로 대응한 점을 참작한다. 이에 본 사건을 쌍방 과실로 평결한다.',
+};
+// Rider read right after the verdict text, shown as its own highlighted subtitle (placeholder)
+const JUDGMENT_RIDERS = {
+  notGuilty: '재판부는 다음과 같이 권고한다. 맞팔은 유지하되 알림은 끌 것.',
+  demandJustified: '재판부는 다음과 같이 권고한다. 정리한 뒤에는 서운함 대신 식사를 함께할 것.',
+  mutualFault: '재판부는 다음과 같이 권고한다. 화해의 식사는 B가 사고, 디저트는 A가 살 것.',
+};
+const CLOSING_LINE = '이상으로 재판을 마칩니다. 폐정합니다.';
+// Outro card (stage 12)
+const OUTRO = { label: '다음 재판', title: '읽씹 6시간 사건', note: '곧 개정' };
+const CASE = {
+  title: '전 애인 팔로우 사건',
+  summary: '교제 1년 차 커플. A는 헤어진 지 3년 된 전 연인과 SNS 맞팔을 유지하고 있다. 이를 발견한 B가 정리를 요구했으나 A는 이미 끝난 사이라며 거부했다.',
+  issues: ['헤어진 전 연인과 SNS 연결을 유지하는 것은 현 연인에 대한 예의 위반인가?', '연인의 SNS 정리를 요구하는 것은 지나친 간섭인가?'],
+  options: OPTIONS,
+};
+const OPENING = {
+  prosecutor: '피고인은 교제 중에도 전 연인과의 연결을 유지해 상대에게 불안을 주었습니다. 이는 배려의 문제라고 주장합니다.',
+  defender: '이미 끝난 관계의 SNS 연결은 형식일 뿐입니다. 이를 정리하라는 요구야말로 과한 간섭이라고 주장합니다.',
+};
+const JUROR_LINES = [
+  { id: 'j1', text: '저는 맞팔 자체보다 숨겼는지가 더 중요하다고 생각해요.' },
+  { id: 'j2', text: '정리를 요구할 수는 있지만 강요는 선을 넘는 것 같아요.' },
+  { id: 'j3', text: '3년 전이면 이미 지난 일인데 너무 예민한 거 아닌가요?' },
+  { id: 'j4', text: '상대가 불안하다고 했다면 들어주는 게 기본 예의 아닐까요?' },
+];
+const FILTER_NOTICE = '부적절한 표현이 감지되어 전송되지 않았습니다. 표현을 바꿔 다시 작성해주세요.';
+// Issue-by-issue arguments and rebuttals (placeholder)
+const ISSUE_DEBATE = [
+  { title: '쟁점 1. 전 연인과 SNS 연결을 유지하는 것은 예의 위반인가?', lines: [
+    { id: 'prosecutor', text: '교제 중인 상대가 불편함을 표현했다면, 연결을 유지할 이유보다 상대의 마음이 우선입니다.' },
+    { id: 'defender',   text: '3년 전에 끝난 관계입니다. 연결을 유지하는 것과 감정이 남아 있는 것은 별개의 문제입니다.' },
+  ] },
+  { title: '쟁점 2. 정리를 요구하는 것은 지나친 간섭인가?', lines: [
+    { id: 'defender',   text: '연인의 계정 목록까지 관리하려는 것은 사생활에 대한 과도한 개입입니다.' },
+    { id: 'prosecutor', text: '요구는 통제가 아니라 신뢰를 지키기 위한 대화의 시작이었습니다.' },
+  ] },
+];
+// Closing: final statements + judge's instructions (placeholder)
+const CLOSING = [
+  { id: 'prosecutor', text: '정리하겠습니다. 상대가 불안을 표현했음에도 연결을 유지한 점은 배려가 부족했다고 봅니다.' },
+  { id: 'defender',   text: '정리하겠습니다. 과거의 인연을 정리하라는 요구가 관계의 조건이 되어서는 안 됩니다.' },
+  { id: 'judge',      text: '배심원 여러분은 지금부터 양측의 주장을 바탕으로 자유롭게 토론하고, 이어서 평결을 내려 주시기 바랍니다.' },
+];
+const PROSECUTOR_NICK = '민트'; // role select screen only
+const DEFENDER_NICK = '라떼';
+
+
+
+// ================================================================
+// ===== DESIGN CONFIG: coordinates, sizes/scales, colors, nameplates, images, aspect ratio, timing =====
 const ASPECT_RATIO = 3 / 2; // bg-top.png is 1536x1024
 const BG_TOPVIEW = 'bg-top.png';
 const BG_CLOSEUP = 'bg-front.png'; // 3:2, same as the container
@@ -273,27 +334,7 @@ const NAMEPLATES = [
 ];
 // Center panel (case intro, trial log, vote): between the judge bench and back-row juror icons
 const PANEL = { x: 32, y: 21, w: 36, h: 20 }; // ends above the back-row juror bubbles (~42)
-const ME = 'j1'; // juror played by "me"
-const OPTIONS = ['notGuilty', 'demandJustified', 'mutualFault'];
-const OPTION_LABELS = { notGuilty: 'A 무죄', demandJustified: 'B 요구 정당', mutualFault: '쌍방 과실' };
-const OPTION_SHORT = { notGuilty: 'A', demandJustified: 'B', mutualFault: '쌍방' };
-const NPC_VOTES = { j2: 'notGuilty', j3: 'notGuilty', j4: 'demandJustified', j5: 'notGuilty', j6: 'mutualFault', j7: 'notGuilty' };
 const NPC_VOTE_MS = 700;
-// Verdict text per option. Later replaced by AI-generated text (VERDICT as input)
-const JUDGMENT_TEXTS = {
-  notGuilty: '주문. 본 법정은 피고인 A가 전 연인과 SNS 연결을 유지한 사실을 인정한다. 그러나 이는 이미 종료된 관계의 형식적 연결에 불과하다고 판단한다. 이에 피고인 A에게 무죄를 선고한다.',
-  demandJustified: '주문. 본 법정은 피고인 A가 전 연인과 SNS 연결을 유지한 사실을 인정한다. 현 연인 B가 느낀 불안은 합리적인 범위의 감정으로 판단한다. 이에 B의 정리 요구는 정당하다고 평결한다.',
-  mutualFault: '주문. 본 법정은 피고인 A가 전 연인과 SNS 연결을 유지한 사실을 인정한다. 다만 B 또한 대화 대신 일방적 요구로 대응한 점을 참작한다. 이에 본 사건을 쌍방 과실로 평결한다.',
-};
-// Rider read right after the verdict text, shown as its own highlighted subtitle (placeholder)
-const JUDGMENT_RIDERS = {
-  notGuilty: '재판부는 다음과 같이 권고한다. 맞팔은 유지하되 알림은 끌 것.',
-  demandJustified: '재판부는 다음과 같이 권고한다. 정리한 뒤에는 서운함 대신 식사를 함께할 것.',
-  mutualFault: '재판부는 다음과 같이 권고한다. 화해의 식사는 B가 사고, 디저트는 A가 살 것.',
-};
-const CLOSING_LINE = '이상으로 재판을 마칩니다. 폐정합니다.';
-// Outro card (stage 12)
-const OUTRO = { label: '다음 재판', title: '읽씹 6시간 사건', note: '곧 개정' };
 // Gavel: 3 strikes before the verdict reading, 1 at the closing line. Sound is generated with Web Audio
 const GAVEL_ENABLED = true;
 const GAVEL_GAP_MS = 450;
@@ -305,42 +346,6 @@ const REACTIONS = {
 };
 const REACTION_ICON = { cheer: 'star', slump: 'sweat', awkward: 'sweat' };
 const REACTION_MS = 2500;
-const CASE = {
-  title: '전 애인 팔로우 사건',
-  summary: '교제 1년 차 커플. A는 헤어진 지 3년 된 전 연인과 SNS 맞팔을 유지하고 있다. 이를 발견한 B가 정리를 요구했으나 A는 이미 끝난 사이라며 거부했다.',
-  issues: ['헤어진 전 연인과 SNS 연결을 유지하는 것은 현 연인에 대한 예의 위반인가?', '연인의 SNS 정리를 요구하는 것은 지나친 간섭인가?'],
-  options: OPTIONS,
-};
-const OPENING = {
-  prosecutor: '피고인은 교제 중에도 전 연인과의 연결을 유지해 상대에게 불안을 주었습니다. 이는 배려의 문제라고 주장합니다.',
-  defender: '이미 끝난 관계의 SNS 연결은 형식일 뿐입니다. 이를 정리하라는 요구야말로 과한 간섭이라고 주장합니다.',
-};
-const JUROR_LINES = [
-  { id: 'j1', text: '저는 맞팔 자체보다 숨겼는지가 더 중요하다고 생각해요.' },
-  { id: 'j2', text: '정리를 요구할 수는 있지만 강요는 선을 넘는 것 같아요.' },
-  { id: 'j3', text: '3년 전이면 이미 지난 일인데 너무 예민한 거 아닌가요?' },
-  { id: 'j4', text: '상대가 불안하다고 했다면 들어주는 게 기본 예의 아닐까요?' },
-];
-const FILTER_NOTICE = '부적절한 표현이 감지되어 전송되지 않았습니다. 표현을 바꿔 다시 작성해주세요.';
-// Issue-by-issue arguments and rebuttals (placeholder)
-const ISSUE_DEBATE = [
-  { title: '쟁점 1. 전 연인과 SNS 연결을 유지하는 것은 예의 위반인가?', lines: [
-    { id: 'prosecutor', text: '교제 중인 상대가 불편함을 표현했다면, 연결을 유지할 이유보다 상대의 마음이 우선입니다.' },
-    { id: 'defender',   text: '3년 전에 끝난 관계입니다. 연결을 유지하는 것과 감정이 남아 있는 것은 별개의 문제입니다.' },
-  ] },
-  { title: '쟁점 2. 정리를 요구하는 것은 지나친 간섭인가?', lines: [
-    { id: 'defender',   text: '연인의 계정 목록까지 관리하려는 것은 사생활에 대한 과도한 개입입니다.' },
-    { id: 'prosecutor', text: '요구는 통제가 아니라 신뢰를 지키기 위한 대화의 시작이었습니다.' },
-  ] },
-];
-// Closing: final statements + judge's instructions (placeholder)
-const CLOSING = [
-  { id: 'prosecutor', text: '정리하겠습니다. 상대가 불안을 표현했음에도 연결을 유지한 점은 배려가 부족했다고 봅니다.' },
-  { id: 'defender',   text: '정리하겠습니다. 과거의 인연을 정리하라는 요구가 관계의 조건이 되어서는 안 됩니다.' },
-  { id: 'judge',      text: '배심원 여러분은 지금부터 양측의 주장을 바탕으로 자유롭게 토론하고, 이어서 평결을 내려 주시기 바랍니다.' },
-];
-const PROSECUTOR_NICK = '민트'; // role select screen only
-const DEFENDER_NICK = '라떼';
 const OPENING_MS = 4000;
 const JUROR_MS = 3000;
 const MAX_MSGS = 5;
