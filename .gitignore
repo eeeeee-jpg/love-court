@@ -1,0 +1,9 @@
+.env
+.env.*
+*.key
+secrets/
+node_modules/
+.DS_Store
+bg.jpg
+reference/
+*.psd
