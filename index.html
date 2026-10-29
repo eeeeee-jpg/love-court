@@ -130,6 +130,30 @@
   .card p { margin: 0 0 .6cqw; font-size: 1.4cqw; color: #ccc; }
   .card button { display: flex; justify-content: center; gap: 1cqw; font-size: 1.3cqw; padding: .6cqw; cursor: pointer; }
   .card button:disabled { background: #666; color: #bbb; cursor: default; }
+  /* Outro: next-trial teaser card in the translucent white panel tone + one gold accent */
+  #endOverlay { flex-direction: column; gap: 1.2cqw; }
+  .card.outro { background: rgba(255,255,255,.75); backdrop-filter: blur(2px); color: #222; border-top: .5cqw solid #D4AF37; }
+  .card.outro span { align-self: center; padding: .2cqw 1cqw; border-radius: 1cqw; background: #D4AF37; color: #222; font-size: 1.2cqw; font-weight: bold; }
+  .card.outro p { margin: 0; color: #444; }
+  #endOverlay > button { font-size: 1.3cqw; padding: .6cqw 2cqw; cursor: pointer; }
+  /* Rider subtitle (after the verdict text) */
+  #sub.rider { color: #ffe08a; font-weight: bold; border: .15cqw solid #ffe08a; }
+  /* Gavel strike: short screen shake */
+  #stage.gavel { animation: gavel .4s; }
+  @keyframes gavel { 20% { translate: -6px 3px; } 40% { translate: 6px -3px; } 60% { translate: -4px 0; } 80% { translate: 3px 0; } }
+  /* Verdict reactions: cheer = 2 jumps, slump = sink while seated, awkward = small side wiggle */
+  .cheer svg { animation: jump .45s ease-out .3s 2; }
+  @keyframes jump { 50% { translate: 0 -18%; } }
+  .slump svg { animation: slump .6s ease-out forwards; }
+  @keyframes slump { to { translate: 0 6%; } }
+  .awkward svg { animation: wiggle .25s ease-in-out infinite alternate; }
+  @keyframes wiggle { from { translate: -4% 0; } to { translate: 4% 0; } }
+  /* Reaction icons drawn with CSS shapes, above the label */
+  .react { position: absolute; bottom: 100%; left: 50%; translate: -50% 0; margin-bottom: .4em; }
+  .react.star { width: 1.4em; height: 1.4em; background: #ffd34d; animation: pop .4s ease-in-out infinite alternate;
+                clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+  @keyframes pop { to { scale: 1.2; } }
+  .react.sweat { width: .9em; height: .9em; background: #7fc8ff; border: .08em solid #fff; border-radius: 0 50% 50% 50%; rotate: 45deg; }
   .shake { animation: shake .3s; }
   @keyframes shake { 25% { transform: translateX(-.4cqw); } 75% { transform: translateX(.4cqw); } }
 </style>
@@ -163,7 +187,8 @@
     </div>
   </div>
   <div id="endOverlay" class="overlay" hidden>
-    <div class="card"><h1>재판 종료</h1><button id="restart">처음부터</button></div>
+    <div class="card outro"><span id="outroLabel"></span><h1 id="outroTitle"></h1><p id="outroNote"></p></div>
+    <button id="restart">처음부터</button>
   </div>
 </div>
 
@@ -226,7 +251,7 @@ const ME = 'j1'; // juror played by "me"
 const OPTIONS = ['notGuilty', 'demandJustified', 'mutualFault'];
 const OPTION_LABELS = { notGuilty: 'A 무죄', demandJustified: 'B 요구 정당', mutualFault: '쌍방 과실' };
 const OPTION_SHORT = { notGuilty: 'A', demandJustified: 'B', mutualFault: '쌍방' };
-const NPC_VOTES = { j2: 'mutualFault', j3: 'notGuilty', j4: 'demandJustified', j5: 'mutualFault', j6: 'mutualFault', j7: 'demandJustified' };
+const NPC_VOTES = { j2: 'notGuilty', j3: 'notGuilty', j4: 'demandJustified', j5: 'notGuilty', j6: 'mutualFault', j7: 'notGuilty' };
 const NPC_VOTE_MS = 700;
 // Verdict text per option. Later replaced by AI-generated text (VERDICT as input)
 const JUDGMENT_TEXTS = {
@@ -234,6 +259,26 @@ const JUDGMENT_TEXTS = {
   demandJustified: '주문. 본 법정은 피고인 A가 전 연인과 SNS 연결을 유지한 사실을 인정한다. 현 연인 B가 느낀 불안은 합리적인 범위의 감정으로 판단한다. 이에 B의 정리 요구는 정당하다고 평결한다.',
   mutualFault: '주문. 본 법정은 피고인 A가 전 연인과 SNS 연결을 유지한 사실을 인정한다. 다만 B 또한 대화 대신 일방적 요구로 대응한 점을 참작한다. 이에 본 사건을 쌍방 과실로 평결한다.',
 };
+// Rider read right after the verdict text, shown as its own highlighted subtitle (placeholder)
+const JUDGMENT_RIDERS = {
+  notGuilty: '재판부는 다음과 같이 권고한다. 맞팔은 유지하되 알림은 끌 것.',
+  demandJustified: '재판부는 다음과 같이 권고한다. 정리한 뒤에는 서운함 대신 식사를 함께할 것.',
+  mutualFault: '재판부는 다음과 같이 권고한다. 화해의 식사는 B가 사고, 디저트는 A가 살 것.',
+};
+const CLOSING_LINE = '이상으로 재판을 마칩니다. 폐정합니다.';
+// Outro card (stage 12)
+const OUTRO = { label: '다음 재판', title: '읽씹 6시간 사건', note: '곧 개정' };
+// Gavel: 3 strikes before the verdict reading, 1 at the closing line. Sound is generated with Web Audio
+const GAVEL_ENABLED = true;
+const GAVEL_GAP_MS = 450;
+// Prosecutor/defender reaction to the verdict (stage 11): cheer | slump | awkward
+const REACTIONS = {
+  notGuilty:       { defender: 'cheer', prosecutor: 'slump' },
+  demandJustified: { prosecutor: 'cheer', defender: 'slump' },
+  mutualFault:     { prosecutor: 'awkward', defender: 'awkward' },
+};
+const REACTION_ICON = { cheer: 'star', slump: 'sweat', awkward: 'sweat' };
+const REACTION_MS = 2500;
 const CASE = {
   title: '전 애인 팔로우 사건',
   summary: '교제 1년 차 커플. A는 헤어진 지 3년 된 전 연인과 SNS 맞팔을 유지하고 있다. 이를 발견한 B가 정리를 요구했으나 A는 이미 끝난 사이라며 거부했다.',
@@ -409,6 +454,9 @@ Object.assign(chat.style, { left: (100 - CHAT_WIDTH_PCT) / 2 + '%', top: CHAT_TO
                             width: CHAT_WIDTH_PCT + '%', height: CHAT_HEIGHT_PCT + '%' });
 chat.style.setProperty('--chat-bg-op', CHAT_BG_OPACITY);
 document.getElementById('caseTitle').textContent = CASE.title;
+document.getElementById('outroLabel').textContent = OUTRO.label;
+document.getElementById('outroTitle').textContent = OUTRO.title;
+document.getElementById('outroNote').textContent = OUTRO.note;
 document.getElementById('pNick').textContent = '선택됨 · ' + PROSECUTOR_NICK;
 document.getElementById('dNick').textContent = '선택됨 · ' + DEFENDER_NICK;
 
@@ -522,6 +570,34 @@ function speak(text) {
     u.onend = u.onerror = r;
     speechSynthesis.speak(u);
   });
+}
+
+let audioCtx = null;
+function gavelSound() {
+  try {
+    audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), vol = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(160, t);
+    osc.frequency.exponentialRampToValueAtTime(45, t + .15);
+    vol.gain.setValueAtTime(.9, t);
+    vol.gain.exponentialRampToValueAtTime(.001, t + .2);
+    osc.connect(vol).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + .2);
+  } catch {} // no Web Audio: shake only
+}
+async function gavel(times, g) {
+  if (!GAVEL_ENABLED) return;
+  for (let i = 0; i < times; i++) {
+    if (g !== gen) return;
+    gavelSound();
+    stage.classList.remove('gavel');
+    stage.offsetWidth; // restart the animation
+    stage.classList.add('gavel');
+    await wait(GAVEL_GAP_MS);
+  }
 }
 
 function addMsg(cls, ...children) {
@@ -670,6 +746,7 @@ const STAGES = [
     votePanel.hidden = true;
     closeup.classList.add('show');
     await wait(800);
+    await gavel(3, g);
     for (const line of JUDGMENT_TEXTS[VERDICT.result].split(/(?<=[.!?])\s+/)) {
       if (g !== gen) return;
       sub.textContent = line;
@@ -678,14 +755,36 @@ const STAGES = [
       setTalking(closeJudge, false);
     }
     if (g !== gen) return;
+    sub.classList.add('rider');
+    sub.textContent = JUDGMENT_RIDERS[VERDICT.result];
+    setTalking(closeJudge, true);
+    await speak(sub.textContent);
+    setTalking(closeJudge, false);
+    if (g !== gen) return;
     backBtn.hidden = false;
     await new Promise(r => backBtn.onclick = r); // next stage unlocks only after returning
     if (g !== gen) return;
     closeup.classList.remove('show');
     backBtn.hidden = true;
+    sub.classList.remove('rider');
     sub.textContent = '';
   } },
-  { name: '이상으로 재판을 마칩니다. 폐정합니다.', run: async g => {
+  { name: '', run: async g => { // reactions first, then the closing line (shown as subtitle here, not as the stage name)
+    const reactions = Object.entries(REACTIONS[VERDICT.result]);
+    reactions.forEach(([id, r]) => {
+      if (r === 'cheer') sit([id], false);
+      els[id].classList.add(r);
+      els[id].querySelector('.label').append(Object.assign(tag('i'), { className: 'react ' + REACTION_ICON[r] }));
+    });
+    await wait(REACTION_MS);
+    if (g !== gen) return;
+    reactions.forEach(([id, r]) => els[id].classList.remove(r));
+    document.querySelectorAll('.react').forEach(el => el.remove());
+    sit(reactions.map(([id]) => id), true);
+    await wait(400);
+    if (g !== gen) return;
+    sub.textContent = CLOSING_LINE;
+    gavel(1, g);
     await talk(els.judge, 2500, g);
     if (g !== gen) return;
     sit(['judge', ...OTHERS], false);
@@ -694,8 +793,8 @@ const STAGES = [
     await walk(els.judge, JUDGE_DOOR, g);
     if (g !== gen) return;
     els.judge.classList.add('out');
-    endOverlay.hidden = false;
   } },
+  { name: '', run: async () => { endOverlay.hidden = false; } }, // outro: next trial teaser
 ];
 
 let step = 0;
@@ -743,6 +842,8 @@ function reset() {
   closeup.classList.remove('show');
   backBtn.hidden = casePanel.hidden = chat.hidden = filterBtn.hidden = votePanel.hidden = true;
   document.querySelectorAll('.mark').forEach(m => m.textContent = '');
+  document.querySelectorAll('.react').forEach(el => el.remove());
+  sub.classList.remove('rider');
   VERDICT = null;
   filterBtn.disabled = false;
   msgs.textContent = chatInput.value = notice.textContent = '';
