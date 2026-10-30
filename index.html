@@ -204,19 +204,27 @@
   #casePanel:not([hidden]) + #caseBackdrop { display: block; }
   @keyframes caseDim { from { opacity: 0; } }
   /* Trial log: translucent white background (opacity from config CHAT_BG_OPACITY) + dark text */
-  #chat { background: rgba(255,255,255,var(--chat-bg-op)); backdrop-filter: blur(2px); color: #222; font-size: 1.5cqw; padding-top: 1cqw; }
-  #msgs { flex: 1; overflow-y: auto; padding: .3cqw 1cqw; scrollbar-width: none; }
+  /* Size from config CHAT_PANEL: text in cqw of the chat window itself, paddings in em so they scale with the text */
+  #chat { container-type: inline-size; translate: -50% -50%; background: rgba(255,255,255,var(--chat-bg-op)); backdrop-filter: blur(2px); color: #222;
+          font-size: calc(var(--chat-body) * 1cqw); line-height: var(--chat-lh); padding-top: 1.6cqw; }
+  #chat .frame-tab { font-size: calc(var(--chat-title) * 1cqw); }
+  #chat .frame-tab b { padding: .2em 1.3em; }
+  #msgs { flex: 1; overflow-y: auto; padding: .4cqw 2.4cqw; scrollbar-width: none; }
   #msgs::-webkit-scrollbar { display: none; }
-  .msg { margin: .5cqw 0; opacity: .7; }
-  .msg b { display: block; font-size: 1.2cqw; color: #333; }
-  .msg span { display: inline-block; background: rgba(255,255,255,.9); color: #222; padding: .3cqw .8cqw; border-radius: .7cqw; }
+  /* CHAT_VISIBLE_MESSAGES 1: one message centered; the old one slides up and out, the new one rises in */
+  /* New message rises in at the bottom of the stack */
+  #msgs .msg.in { animation: msgIn 250ms ease-out; }
+  @keyframes msgIn { from { transform: translateY(12px); opacity: 0; } }
+  .msg { margin: 0 0 var(--chat-gap); opacity: .7; font-size: calc(var(--chat-body) * 1cqw); }
+  .msg b { display: block; font-size: calc(var(--chat-name) * 1cqw); color: #333; }
+  .msg > span { display: inline-block; background: rgba(255,255,255,.9); color: #222; padding: .2em .53em; border-radius: .47em; }
   .msg.cur { opacity: 1; }
-  .msg.cur span { background: #fff3b0; }
+  .msg.cur > span { background: #fff3b0; }
   .msg.sys { opacity: 1; text-align: center; }
-  .msg.sys span { background: rgba(190,190,190,.8); color: #222; font-size: 1.3cqw; }
-  #chatInput { margin: .5cqw 1cqw 0; font-size: 1.4cqw; padding: .3cqw .5cqw; background: #fff; color: #222; }
+  .msg.sys > span { background: rgba(190,190,190,.8); color: #222; font-size: .87em; }
+  #chatInput { margin: .35em 1em 0; font-size: calc(var(--chat-input) * 1cqw); padding: .2em .35em; background: #fff; color: #222; }
   #chatInput::placeholder { color: #666; }
-  #notice { margin: .2cqw 1cqw .5cqw; color: #b00000; font-size: 1.2cqw; font-weight: bold; }
+  #notice { margin: .15em 1.2em .4em; color: #b00000; font-size: calc(var(--chat-input) * .85cqw); font-weight: bold; }
   #votePanel { padding: .8cqw 1.2cqw; gap: .5cqw; }
   #votePanel h2 { margin: 0; font: 700 1.5cqw var(--font-title); text-align: center; }
   /* Vote options as a list menu: cream bar + triangle cursor on the hovered (or chosen) row */
@@ -275,6 +283,9 @@
   #gauge { position: absolute; z-index: 150; padding: 1.6cqw 1.2cqw .8cqw; background: var(--ui-panel); color: var(--ui-text);
            font-size: 1.1cqw; transition: opacity var(--g-fade); }
   #gauge[hidden] { display: none; }
+  /* While the trial log is shown: gauge goes under it and dims (filter, so the opacity fade-out still works) */
+  #gauge { filter: opacity(1); transition: opacity var(--g-fade), filter var(--g-dim-ms); }
+  #chat:not([hidden]) ~ #gauge { z-index: 149; filter: opacity(var(--g-dim)); }
   #gauge.fade { opacity: 0; }
   .g-row { display: grid; grid-template-columns: 4.6cqw 2.4cqw 1.2cqw 1fr; align-items: center; gap: .4cqw; margin: .3cqw 0; }
   .g-num { text-align: right; font-weight: bold; font-variant-numeric: tabular-nums; }
@@ -479,9 +490,10 @@ const MOUTH_MS = 150;
 const STEP_MS = 200;     // walk frame interval
 const AVATAR_SCALE = 2;  // overall scale for avatars, labels and icons
 const STAND_OFFSET = 15; // how far (%) the prosecutor/defender steps toward the center to speak, so they stand in the open space past the vertical desk (width 5.5)
-const CHAT_WIDTH_PCT = 40;   // trial log window size (% of container), centered horizontally
-const CHAT_HEIGHT_PCT = 20;
-const CHAT_TOP_PCT = 21;     // between the judge's head and the back-row juror bubbles
+// Trial log window: size in % of container, text in cqw of the window itself; centered in the scene above the dialog box
+const CHAT_PANEL = { widthPct: 64, heightPct: 60, titleCqw: 2.4, nameCqw: 2.0, bodyCqw: 2.6, inputCqw: 2.4, lineHeight: 1.5 };
+const GAUGE_DIM_WITH_CHAT = 0.6;  // gauge opacity while the trial log is shown (the gauge also goes under it)
+const GAUGE_DIM_MS = 300;
 const CHAT_BG_OPACITY = 0.55;
 // Coordinates: % of container (avatar feet = seat position)
 const DOOR = { x: 50, y: 86 };
@@ -601,7 +613,8 @@ const REACTION = {
 };
 const OPENING_MS = 4000;
 const JUROR_MS = 3000;
-const MAX_MSGS = 5;
+const CHAT_VISIBLE_MESSAGES = 6;  // trial log keeps this many messages, stacked top to bottom; older ones scroll up out of view
+const CHAT_MESSAGE_GAP_CQW = 1.2; // space between messages, cqw of the chat window
 // Stage 0 logo (logo.png) before the role cards: fades in and waits for a click, then shrinks out and the cards appear
 const LOGO_INTRO_ENABLED = true;
 const LOGO_NEXT_BUTTON_ENABLED = false; // true: ▶ / → on the logo works like a click
@@ -746,8 +759,10 @@ stage.style.setProperty('--ar', ASPECT_RATIO);
 stage.style.setProperty('--scale', AVATAR_SCALE);
 document.querySelectorAll('.panel').forEach(el => Object.assign(el.style,
   { left: PANEL.x + '%', top: PANEL.y + '%', width: PANEL.w + '%', height: PANEL.h + '%' }));
-Object.assign(chat.style, { left: (100 - CHAT_WIDTH_PCT) / 2 + '%', top: CHAT_TOP_PCT + '%',
-                            width: CHAT_WIDTH_PCT + '%', height: CHAT_HEIGHT_PCT + '%' });
+Object.assign(chat.style, { left: '50%', top: (DIALOGUE_MODE === 'box' ? 100 - DIALOGUE_BOX.height - DIALOGUE_BOX.bottom : 100) / 2 + '%',
+                            width: CHAT_PANEL.widthPct + '%', height: CHAT_PANEL.heightPct + '%' });
+[['--chat-title', CHAT_PANEL.titleCqw], ['--chat-gap', CHAT_MESSAGE_GAP_CQW + 'cqw'], ['--chat-name', CHAT_PANEL.nameCqw], ['--chat-body', CHAT_PANEL.bodyCqw],
+ ['--chat-input', CHAT_PANEL.inputCqw], ['--chat-lh', CHAT_PANEL.lineHeight]].forEach(([k, v]) => chat.style.setProperty(k, v));
 chat.style.setProperty('--chat-bg-op', CHAT_BG_OPACITY);
 document.getElementById('caseTitle').textContent = CASE.title;
 document.getElementById('outroLabel').textContent = OUTRO.label;
@@ -813,7 +828,8 @@ outroCard.prepend(frameTab(PANEL_TABS.outro));
 // Juror mood gauge: two rows (not guilty / protest), values always add up to 100
 const gauge = document.getElementById('gauge');
 Object.assign(gauge.style, { right: GAUGE.right + '%', top: GAUGE.top + '%', width: GAUGE.width + '%' });
-[['--g-not-guilty', GAUGE.colors.notGuilty], ['--g-protest', GAUGE.colors.protest], ['--g-fade', GAUGE.fadeMs + 'ms']]
+[['--g-not-guilty', GAUGE.colors.notGuilty], ['--g-protest', GAUGE.colors.protest], ['--g-fade', GAUGE.fadeMs + 'ms'],
+ ['--g-dim', GAUGE_DIM_WITH_CHAT], ['--g-dim-ms', GAUGE_DIM_MS + 'ms']]
   .forEach(([k, v]) => stage.style.setProperty(k, v));
 gauge.append(frameTab(GAUGE_TEXT.title));
 const gaugeRows = ['notGuilty', 'protest'].map(key => {
@@ -1041,10 +1057,22 @@ function addMsg(cls, ...children) {
   const m = tag('div');
   m.className = cls;
   m.append(...children);
+  m.classList.add('in');
   msgs.append(m);
-  while (msgs.children.length > MAX_MSGS) msgs.firstChild.remove();
-  msgs.scrollTop = msgs.scrollHeight;
+  while (msgs.children.length > Math.max(1, CHAT_VISIBLE_MESSAGES)) msgs.firstChild.remove(); // off-screen by now
+  requestAnimationFrame(() => msgs.scrollTo({ top: msgs.scrollHeight, behavior: 'smooth' })); // after the layout settles
   return m;
+}
+// Types a chat bubble at TYPEWRITER_MS_PER_CHAR; returns a function that shows the rest at once
+function typeMsg(span) {
+  typeMsg.finish?.(); // a bubble still typing completes at once
+  const chars = [...span.textContent].map(c => tag('span', c));
+  span.replaceChildren(...chars);
+  chars.forEach(c => c.style.visibility = 'hidden'); // the bubble keeps its full size while typing
+  let k = 0;
+  const finish = typeMsg.finish = () => { loop('chatType', false); chars.forEach(c => c.style.visibility = ''); };
+  loop('chatType', true, () => { chars[k++].style.visibility = ''; if (k >= chars.length) finish(); }, TYPEWRITER_MS_PER_CHAR);
+  return finish;
 }
 async function say(id, text, ms, g, cutin) {
   await stepForth(id, g);
@@ -1052,6 +1080,7 @@ async function say(id, text, ms, g, cutin) {
   if (cutin) await cutinIntro(id, cutin, g); // stays on screen through the line
   if (g !== gen) return;
   const m = addMsg('msg cur', tag('b', AVATARS.find(a => a.id === id).label), tag('span', text));
+  const typed = typeMsg(m.lastChild);
   const inBox = !seatOf(id).color; // judge/prosecutor/defender speak in the dialogue box; jurors only in the chat
   if (inBox && DIALOGUE_MODE === 'box') await boxLine(id, text, g, cutin);
   else {
@@ -1059,7 +1088,7 @@ async function say(id, text, ms, g, cutin) {
     await talk(els[id], ms, g);
   }
   if (g !== gen) return;
-  m.classList.remove('cur');
+  typed(); // stays highlighted (cur) until the next message
   if (inBox) lineDone();
   gaugeAfterLine();
 }
@@ -1475,7 +1504,7 @@ const STAGES = [
     gauge.classList.remove('fade');
     gauge.hidden = false; // shown from here until the vote
     for (const { title, lines } of ISSUE_DEBATE) {
-      addMsg('msg sys', tag('span', title));
+      typeMsg(addMsg('msg sys', tag('span', title)).lastChild);
       speech(null, title);
       if (DIALOGUE_MODE === 'box') await wait(LINE_HOLD_AFTER_TYPING_MS); // let the title be read before a cut-in covers the screen
       if (g !== gen) return;
@@ -1630,10 +1659,11 @@ function buildState(i) {
   setInputEnabled(i === 9 || i === 10);
   msgs.textContent = chatInput.value = notice.textContent = '';
   const log = [];
-  if (i >= 6) log.push(...['prosecutor', 'defender'].map(id => ({ id, text: OPENING[id] })));
-  if (i >= 7) ISSUE_DEBATE.forEach(({ title, lines }) => log.push({ title }, ...lines));
-  if (i >= 8) log.push(...CLOSING);
-  if (i >= 9) log.push(...JUROR_LINES);
+  // Only lines from stages that showed the log, so a stage's replay starts its own messages from scratch
+  if (i >= 6 && chatShownAt(5)) log.push(...['prosecutor', 'defender'].map(id => ({ id, text: OPENING[id] })));
+  if (i >= 7 && chatShownAt(6)) ISSUE_DEBATE.forEach(({ title, lines }) => log.push({ title }, ...lines));
+  if (i >= 8 && chatShownAt(7)) log.push(...CLOSING);
+  if (i >= 9 && chatShownAt(8)) log.push(...JUROR_LINES);
   log.forEach(l => l.title ? addMsg('msg sys', tag('span', l.title)) : addMsg('msg', tag('b', seatOf(l.id).label), tag('span', l.text)));
   document.querySelectorAll('.mark').forEach(m => m.textContent = '');
   votePanel.hidden = true;
