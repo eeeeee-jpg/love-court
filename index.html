@@ -308,6 +308,16 @@
   #cutin .burst { position: absolute; top: 50%; translate: 0 -50%; width: var(--burst-w); height: var(--burst-h); background: #fff;
                   clip-path: var(--star); display: flex; align-items: center; justify-content: center; }
   #cutin.left .burst { right: 8%; } #cutin.right .burst { left: 8%; }
+  /* Portraits: outside the band so the head pops out above it; the burst (next in order) stays above the hand */
+  #cutin .pt { position: absolute; inset: 0; }
+  .portrait { position: absolute; max-width: none; pointer-events: none; }
+  .portrait.blend { mix-blend-mode: multiply; }
+  .portrait.talking { animation: portraitBob calc(var(--bob-ms) * 2) steps(1) infinite; }
+  @keyframes portraitBob { 50% { transform: translateY(calc(var(--bob) * -1)); } }
+  #judgePortrait { z-index: 29; /* below the desk clip (30) and the gavel */ --bob: calc(var(--portrait-bob) / 2); }
+  #cutin .portrait { --bob: var(--portrait-bob); }
+  /* Stage 4 case panel stays above the judge speaking cut (#closeup, 200) */
+  #caseBackdrop { z-index: 204; } #casePanel { z-index: 205; }
   /* Bold dark-wine text with a white outline, tilted and trembling */
   .burst b, .stamp b { font: 900 var(--burst-font) var(--font-title); color: var(--cutin-text); white-space: nowrap;
                        -webkit-text-stroke: .35cqw #fff; paint-order: stroke fill; rotate: var(--tilt); animation: jitter .08s steps(2) infinite; }
@@ -483,7 +493,7 @@
   <div id="dialog" hidden><span class="tag"><b></b></span><p></p><i class="more"></i></div>
   <div id="gauge" class="frame" hidden></div>
   <div id="cutin" hidden><div class="dim"></div><div class="flash"></div>
-    <div class="band"><div class="who"></div><div class="burst"><b></b></div></div></div>
+    <div class="band"><div class="who"></div></div><div class="pt"><img class="portrait" alt="" hidden></div><div class="burst"><b></b></div></div>
   <div id="roleOverlay" class="overlay" hidden>
     <div id="logo" hidden><img alt=""></div>
     <div class="card">
@@ -644,6 +654,18 @@ const CLOSEUP_JUDGE = { x: 50, headTop: 30, scale: 2.64 };
 const CLOSEUP_ARMS = { y: 18, handX: [3, 7] };
 // Close-up desk area in the image (%): redrawn above the judge so the desk hides the lower body
 const CLOSEUP_DESK_CLIP = { x: 14, y: 55, w: 71, h: 35 };
+// Illustrated portraits (cut-in band; judge close-up only if JUDGE_USE_PORTRAIT). A missing file falls back to the pixel sprite
+const JUDGE_USE_PORTRAIT = false;  // false = pixel judge in the close-up (CLOSEUP_JUDGE); true = judge-neutral.png (preloaded only then)
+const PORTRAIT_FILES = { judge: 'judge-neutral.png', prosecutor: 'prosecutor-point.png', defender: 'defender-point.png' };
+const PORTRAIT_AUTO_TRIM = true;   // place by the opaque bounding box (canvas read; blocked on file:// → whole image)
+const PORTRAIT_BLEND = 'auto';     // 'auto' = multiply + console warning if the image has no transparency | 'normal' | 'multiply'
+const PORTRAIT_FLIP = { prosecutor: false, defender: false }; // originals already point at the bubble side
+const PORTRAIT_TALK_BOB_PX = 3;    // up/down while talking; the judge bobs half of this
+const PORTRAIT_TALK_BOB_MS = 140;
+const CUTIN_PORTRAIT_H = 1.15;     // opaque height × band height
+const CUTIN_PORTRAIT_POPOUT = .10; // head above the band top, × band height (the rest hangs below, behind the dialogue box)
+const CUTIN_PORTRAIT_OFFSET_X_PCT = { prosecutor: -20, defender: 20 }; // bounding-box center, % of width from the screen center (±6 hides the hand behind the burst)
+const JUDGE_PORTRAIT = { xPct: 50, bottomYPct: 60, heightPct: 42, gavelX: 29 }; // opaque box, % of bg-front; the desk clip covers the lower body; gavelX replaces GAVEL.x so the gavel clears the robe
 const WALK_SPEED = 30;   // % moved per second
 const MOUTH_MS = 150;
 const STEP_MS = 200;     // walk frame interval
@@ -1068,6 +1090,13 @@ closeup.appendChild(closeJudge);
 Object.assign(closeJudge.style, { left: CLOSEUP_JUDGE.x + '%', top: CLOSEUP_JUDGE.headTop + '%', marginTop: '0' });
 closeJudge.style.setProperty('--w', 4 * CLOSEUP_JUDGE.scale + 'cqw');
 closeJudge.firstChild.style.zIndex = 31; // above the desk clip layer (30) so the hands on the desk edge stay visible
+const judgePortrait = Object.assign(document.createElement('img'), { id: 'judgePortrait', className: 'portrait', alt: '', hidden: true });
+closeup.appendChild(judgePortrait);
+const cutPortrait = cutinEl.querySelector('.portrait');
+// Talking (setTalking) also bobs the speaker's portrait
+const talkPortrait = new Map([[closeJudge, judgePortrait], [els.prosecutor, cutPortrait], [els.defender, cutPortrait]]);
+stage.style.setProperty('--portrait-bob', PORTRAIT_TALK_BOB_PX + 'px');
+stage.style.setProperty('--bob-ms', PORTRAIT_TALK_BOB_MS + 'ms');
 const closeupDeskClip = Object.assign(document.createElement('div'), { id: 'closeupDeskClip' });
 closeupDeskClip.style.clipPath = clipInset(CLOSEUP_DESK_CLIP);
 closeup.appendChild(closeupDeskClip);
@@ -1101,6 +1130,55 @@ NAMEPLATES.forEach(n => {
 const probe = new Image();
 probe.onload = () => closeup.style.backgroundImage = closeupDeskClip.style.backgroundImage = `url("${BG_CLOSEUP}")`;
 probe.src = BG_CLOSEUP;
+// Portraits: preload, measure the opaque box (auto trim) and transparency; a missing file keeps the pixel sprite
+const PORTRAITS = {}; // id → { src, W, H, box, blend }
+function measurePortrait(img) {
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const p = { src: img.src, W, H, box: { x: 0, y: 0, w: W, h: H }, blend: PORTRAIT_BLEND === 'multiply' };
+  try {
+    const s = Math.min(1, 256 / W), w = Math.round(W * s), h = Math.round(H * s);
+    const ctx = Object.assign(document.createElement('canvas'), { width: w, height: h }).getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    const a = ctx.getImageData(0, 0, w, h).data; // throws on file:// (tainted canvas)
+    let x0 = w, y0 = h, x1 = -1, y1 = -1, clear = false;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const v = a[(y * w + x) * 4 + 3];
+      if (v < 255) clear = true;
+      if (v > 16) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    }
+    if (PORTRAIT_BLEND === 'auto' && !clear) {
+      p.blend = true;
+      console.warn('[court] portrait has no transparency, shown with multiply:', img.src);
+    }
+    if (PORTRAIT_AUTO_TRIM && x1 >= 0) p.box = { x: x0 / s, y: y0 / s, w: (x1 - x0 + 1) / s, h: (y1 - y0 + 1) / s };
+  } catch { dbg('portrait canvas read blocked, using the whole image:', img.src); }
+  return p;
+}
+// Opaque box: center x at x, bottom at bottom, height = height (all % of the parent)
+function placePortrait(img, p, x, bottom, height, flip = false) {
+  const { W, H, box } = p, cx = flip ? W - box.x - box.w / 2 : box.x + box.w / 2;
+  img.src = p.src;
+  img.classList.toggle('blend', p.blend);
+  Object.assign(img.style, { left: x + '%', top: bottom + '%', height: height * H / box.h + '%',
+                             translate: `${-cx / W * 100}% ${-(box.y + box.h) / H * 100}%`, scale: flip ? '-1 1' : '' });
+}
+Object.entries(PORTRAIT_FILES).forEach(([id, src]) => {
+  if (id === 'judge' && !JUDGE_USE_PORTRAIT) return;
+  const img = new Image();
+  img.onload = () => {
+    PORTRAITS[id] = measurePortrait(img);
+    if (id !== 'judge') return;
+    gavelEl.style.left = JUDGE_PORTRAIT.gavelX + '%';
+    const J = JUDGE_PORTRAIT;
+    placePortrait(judgePortrait, PORTRAITS.judge, J.xPct, J.bottomYPct, J.heightPct);
+    judgePortrait.hidden = false;
+    closeJudge.style.display = 'none';
+  };
+  img.onerror = () => console.warn('[court] portrait missing, pixel sprite instead:', src);
+  img.src = src;
+});
+// Judge speaking cut: the front close-up (pixel judge, or the portrait if JUDGE_USE_PORTRAIT)
+const judgeCut = on => closeup.classList.toggle('show', on);
 // Top-view background: keep the fallback floor if the image is missing
 const topProbe = new Image();
 topProbe.onload = () => court.style.background = deskClip.style.background = `url("${BG_TOPVIEW}") 0 0 / 100% 100%`;
@@ -1115,6 +1193,8 @@ function loop(key, on, fn, ms) {
 function setTalking(el, on) {
   el.classList.remove('talk-open');
   loop(el, on, () => el.classList.toggle('talk-open'), MOUTH_MS);
+  if (el === els.judge) setTalking(closeJudge, on); // the close-up judge talks along during judge cuts
+  talkPortrait.get(el)?.classList.toggle('talking', on);
 }
 
 let gen = 0; // bumped by stopPlayback; a running stage stops
@@ -1268,6 +1348,7 @@ async function say(id, text, ms, g, cutin) {
   if (g !== gen) return;
   if (cutin) await cutinIntro(id, cutin, g); // stays on screen through the line
   if (g !== gen) return;
+  if (id === 'judge') judgeCut(true);
   const m = addMsg('msg cur', tag('b', AVATARS.find(a => a.id === id).label), tag('span', text));
   const typed = typeMsg(m.lastChild);
   const inBox = !seatOf(id).color; // judge/prosecutor/defender speak in the dialogue box; jurors only in the chat
@@ -1279,6 +1360,7 @@ async function say(id, text, ms, g, cutin) {
   if (g !== gen) return;
   typed(); // stays highlighted (cur) until the next message
   if (inBox) lineDone();
+  if (id === 'judge') judgeCut(false);
   gaugeAfterLine();
 }
 // Dialogue-box line: type at TYPEWRITER_MS_PER_CHAR (mouth moves while typing), then hold.
@@ -1430,11 +1512,17 @@ function cutinSound() {
 // Entrance (CUTIN_INTRO_MS); the cut-in then stays until cutinOut
 async function cutinIntro(id, text, g) {
   const C = CUTIN, left = id === 'prosecutor'; // prosecutor's sprite on the left, defender's on the right
-  const [dim, flash, band] = cutinEl.children, who = band.firstChild, burst = band.lastChild;
+  const [dim, flash, band, pt, burst] = cutinEl.children, p = PORTRAITS[id];
+  const who = p ? pt : band.firstChild; // portrait, or the pixel sprite if the file is missing
   cutinEl.className = left ? 'left' : 'right';
   cutinEl.hidden = false;
   band.style.setProperty('--band', C.colors[id]);
-  who.innerHTML = spriteSVG('side', PALETTES[id], !left);
+  band.firstChild.hidden = !!p;
+  cutPortrait.hidden = !p;
+  if (p) {
+    const top = 50 - C.bandHeight / 2 - CUTIN_PORTRAIT_POPOUT * C.bandHeight, h = CUTIN_PORTRAIT_H * C.bandHeight;
+    placePortrait(cutPortrait, p, 50 + CUTIN_PORTRAIT_OFFSET_X_PCT[id], top + h, h, PORTRAIT_FLIP[id]);
+  } else band.firstChild.innerHTML = spriteSVG('side', PALETTES[id], !left);
   burst.firstChild.textContent = text;
   cutinSound();
   dim.animate([{ opacity: 0 }, { opacity: C.dim }], { duration: 100, fill: 'forwards' });
@@ -1911,6 +1999,7 @@ const STAGES = [
   } },
   { name: '', run: async g => { // TTS + bubble icon + mouth, no subtitle/chat
     sit(['judge'], true);
+    judgeCut(true);
     els.judge.classList.add('talking');
     setTalking(els.judge, true);
     const line = '지금부터 개정합니다';
@@ -1923,15 +2012,18 @@ const STAGES = [
     lineDone();
     els.judge.classList.remove('talking');
     setTalking(els.judge, false);
+    judgeCut(false);
   } },
   { name: '사건을 소개합니다', speaker: 'judge', run: async g => { // the stage name is the judge's line
     casePanel.hidden = false;
     fitCasePanel();
+    judgeCut(true);
     setTalking(els.judge, true);
     await wait(2500);
     if (g !== gen) return;
     setTalking(els.judge, false);
     lineDone();
+    judgeCut(false);
   } },
   { name: '모두진술', run: async g => {
     casePanel.hidden = true;
@@ -2026,10 +2118,12 @@ const STAGES = [
     await Promise.all([celebrate(winner, g), lament(loser, g), wait(REACTION.totalMs)]);
     if (g !== gen) return;
     caption(CLOSING_LINE, { id: 'judge' });
+    judgeCut(true);
     gavel(1, g);
     await talk(els.judge, 2500, g);
     if (g !== gen) return;
     lineDone();
+    judgeCut(false);
     sit(['judge', ...OTHERS], false);
     await wait(600);
     if (g !== gen) return;
@@ -2108,6 +2202,8 @@ function buildState(i) {
   endLogo();
   closeup.classList.remove('show');
   closeJudge.className = 'avatar';
+  judgePortrait.classList.remove('talking');
+  cutPortrait.classList.remove('talking');
   gavelEl.classList.remove('up');
   caption('');
   casePanel.hidden = i !== 4;
