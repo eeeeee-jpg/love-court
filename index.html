@@ -645,8 +645,8 @@ const DEFENDER_NICK = '라떼';
 // ================================================================
 // ===== DESIGN CONFIG: coordinates, sizes/scales, colors, nameplates, images, aspect ratio, timing =====
 const ASPECT_RATIO = 3 / 2; // bg-top.png is 1536x1024
-const BG_TOPVIEW = 'bg-top.png';
-const BG_CLOSEUP = 'bg-front.png'; // 3:2, same as the container
+const BG_TOPVIEW = 'imges/bg-top.png';
+const BG_CLOSEUP = 'imges/bg-front.png'; // 3:2, same as the container
 // Close-up judge (seated sprite): x center and headTop (% of image), scale × base avatar width (4cqw).
 // scale 2.64 keeps the shoulders inside the chair back (x 44~56); headTop 30 puts the forearms/hands on the desk top (~55)
 const CLOSEUP_JUDGE = { x: 50, headTop: 30, scale: 2.64 };
@@ -656,7 +656,7 @@ const CLOSEUP_ARMS = { y: 18, handX: [3, 7] };
 const CLOSEUP_DESK_CLIP = { x: 14, y: 55, w: 71, h: 35 };
 // Illustrated portraits (cut-in band; judge close-up only if JUDGE_USE_PORTRAIT). A missing file falls back to the pixel sprite
 const JUDGE_USE_PORTRAIT = false;  // false = pixel judge in the close-up (CLOSEUP_JUDGE); true = judge-neutral.png (preloaded only then)
-const PORTRAIT_FILES = { judge: 'judge-neutral.png', prosecutor: 'prosecutor-point.png', defender: 'defender-point.png' };
+const PORTRAIT_FILES = { judge: 'imges/judge-neutral.png', prosecutor: 'imges/prosecutor-point.png', defender: 'imges/defender-point.png' };
 const PORTRAIT_AUTO_TRIM = true;   // place by the opaque bounding box (canvas read; blocked on file:// → whole image)
 const PORTRAIT_BLEND = 'auto';     // 'auto' = multiply + console warning if the image has no transparency | 'normal' | 'multiply'
 const PORTRAIT_FLIP = { prosecutor: false, defender: false }; // originals already point at the bubble side
@@ -964,7 +964,7 @@ const endOverlay = document.getElementById('endOverlay');
 const roleCard = roleOverlay.querySelector('.card');
 const logoEl = document.getElementById('logo');
 const logoImg = logoEl.firstChild;
-logoImg.src = 'logo.png';
+logoImg.src = 'imges/logo.png';
 stage.style.setProperty('--logo-w', LOGO_WIDTH_PCT + '%');
 stage.style.setProperty('--ar', ASPECT_RATIO);
 stage.style.setProperty('--scale', AVATAR_SCALE);
@@ -1735,7 +1735,7 @@ trGavel.innerHTML = `<svg viewBox="0 0 32 14"><rect x="9" y="5" width="20" heigh
 trHit.innerHTML = '<i></i>'.repeat(12) + '<b></b>'.repeat(12);
 trSfx.textContent = TRAILER_TEXT.smash;
 trCard.querySelector('b').textContent = TRAILER_TEXT.title;
-trCard.querySelector('img').src = 'logo.png';
+trCard.querySelector('img').src = 'imges/logo.png';
 trCard.querySelector('.note').textContent = TRAILER_TEXT.note;
 trCard.querySelector('.ask').textContent = TRAILER_TEXT.ask;
 const trRestart = trCard.querySelector('button');
