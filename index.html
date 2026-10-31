@@ -359,6 +359,111 @@
               object-fit: contain; pointer-events: auto; cursor: pointer; }
   .shake { animation: shake .3s; }
   @keyframes shake { 25% { transform: translateX(-.4cqw); } 75% { transform: translateX(.4cqw); } }
+  /* Stage 13 trailer: reenactment stage drawn in CSS/SVG over the courtroom. Scene positions in % of the stage */
+  #trailer { position: absolute; inset: 0; z-index: 230; overflow: hidden; background: #000; }
+  #trailer[hidden], #trailer [hidden] { display: none; }
+  .tr-shake, .tr-scene { position: absolute; inset: 0; }
+  .tr-scene { transform-origin: 0 0; overflow: hidden; }
+  .tr-scene > * { position: absolute; }
+  .tr-wall { inset: 0 0 38% 0; background: linear-gradient(var(--tr-wall-top), var(--tr-wall-bottom)); }
+  .tr-wall::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 22%; border-top: .4cqw solid rgba(0,0,0,.35);
+                    background: rgba(0,0,0,.18); } /* wainscot */
+  .tr-floor { inset: 62% 0 0 0; background: linear-gradient(var(--tr-floor-top), var(--tr-floor-bottom)); }
+  .tr-chair { top: 62%; width: 8%; height: 20%; z-index: 1;
+              background: linear-gradient(90deg, transparent 86%, var(--tr-chair) 86%) 0 100% / 100% 38% no-repeat; } /* front leg */
+  .tr-chair::before, .tr-chair::after { content: ''; position: absolute; left: 0; background: var(--tr-chair); }
+  .tr-chair::before { top: 0; width: 14%; height: 100%; } /* back + rear leg */
+  .tr-chair::after { top: 62%; width: 100%; height: 8%; } /* seat */
+  .tr-chair.b { left: 26%; }
+  .tr-chair.a { left: 66%; scale: -1 1; }
+  .tr-char { bottom: 22%; width: 12%; translate: -50% 0; z-index: 2; }
+  .tr-char.b { left: 31%; }
+  .tr-char.a { left: 69%; }
+  .tr-char svg { display: block; width: 100%; shape-rendering: crispEdges; }
+  .tr-char.small .open { height: 1px; } /* mouth opens only a little */
+  .tr-char > b { position: absolute; top: 2%; padding: 0 .35em; font-size: 1.4cqw; line-height: 1.3; color: var(--gold-light);
+                 background: rgba(0,0,0,.6); border: .15cqw solid var(--gold-base); border-radius: .3em; }
+  .tr-char.b > b { right: -6%; }
+  .tr-char.a > b { left: -6%; }
+  .tr-fx { position: absolute; bottom: 82%; display: flex; align-items: flex-end; gap: .3cqw; }
+  .tr-char.a .tr-fx { left: 72%; }
+  .tr-char.b .tr-fx { right: 72%; }
+  .tr-fx svg { display: block; overflow: visible; }
+  .tr-fx .sweat { width: 1.2cqw; height: 1.2cqw; margin-bottom: .6cqw; background: #7fc8ff; border: .15cqw solid #fff; border-radius: 0 50% 50% 50%; rotate: 45deg; }
+  .tr-table { left: 38%; top: 63%; width: 24%; height: 17%; z-index: 3; }
+  .tr-table i { position: absolute; left: 50%; translate: -50% 0; background: var(--tr-table-dark); }
+  .tr-table .top { top: 0; width: 100%; height: 35%; border-radius: 50%; background: var(--tr-table); box-shadow: 0 .4cqw 0 var(--tr-table-dark); }
+  .tr-table .leg { top: 20%; width: 8%; height: 75%; }
+  .tr-table .foot { bottom: 0; width: 42%; height: 14%; border-radius: 50%; }
+  .tr-pack { top: 67%; left: 58%; width: 4.5%; height: 3.2%; z-index: 4; translate: -50% -100%; transform-origin: 50% 100%; box-sizing: border-box;
+             background: var(--tr-pack); border: .25cqw solid var(--tr-pack-edge); border-radius: .4cqw; }
+  .tr-pack::after { content: ''; position: absolute; left: 12%; right: 12%; top: 50%; border-top: .2cqw dashed var(--tr-pack-edge); }
+  .tr-hit { left: 50%; top: 65.4%; width: 0; height: 0; z-index: 5; }
+  .tr-hit i, .tr-hit b { opacity: 0; }
+  .tr-hit i { position: absolute; left: 0; top: -.12cqw; width: 4cqw; height: .25cqw; background: #fff; transform-origin: 0 50%; }
+  .tr-hit b { position: absolute; left: -.3cqw; top: -.3cqw; width: .6cqw; height: .6cqw; background: var(--tr-pack); }
+  .tr-gavel { left: 50%; bottom: 34%; width: 14%; margin-left: -1.97%; z-index: 6; opacity: 0; transform-origin: 14.06% 100%; } /* head bottom center on the pack */
+  .tr-gavel svg { display: block; width: 100%; shape-rendering: crispEdges; }
+  .tr-bubble { position: absolute; left: 50%; top: calc(var(--tr-box) + 2%); translate: -50% 0; max-width: 70cqw; padding: .9cqw 2cqw; z-index: 2;
+               font-size: 2.3cqw; font-weight: bold; line-height: 1.35; text-align: center; text-wrap: balance; word-break: keep-all; color: #111;
+               background: #fff; border: .25cqw solid #111; border-radius: 3cqw; }
+  .tr-bubble::after { content: ''; position: absolute; left: 50%; top: 100%; translate: -50% 0; width: 2cqw; height: 1.6cqw; background: #111;
+                      clip-path: polygon(0 0, 100% 0, 50% 100%); }
+  .tr-sfx { position: absolute; left: 60%; top: 24%; z-index: 3; font-size: 10cqw; font-weight: 900; rotate: -8deg; color: #FFE14D;
+            -webkit-text-stroke: .9cqw #B3121B; paint-order: stroke fill; }
+  .tr-sepia, .tr-grain, .tr-vignette, .tr-flash { position: absolute; inset: 0; pointer-events: none; }
+  .tr-sepia { background: #704214; mix-blend-mode: color; opacity: var(--tr-sepia); }
+  .tr-grain { inset: -10%; opacity: var(--tr-grain-op); background-image: var(--tr-grain); mix-blend-mode: overlay; animation: trGrain .5s steps(5) infinite; }
+  @keyframes trGrain { 20% { translate: -3% 2%; } 40% { translate: 2% -4%; } 60% { translate: -4% -1%; } 80% { translate: 3% 3%; } }
+  .tr-vignette { background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,var(--tr-vignette)) 100%); }
+  .tr-box { position: absolute; left: 0; right: 0; height: var(--tr-box); background: #000; }
+  .tr-box.top { top: 0; }
+  .tr-box.bottom { bottom: 0; }
+  .tr-tag { position: absolute; left: 3%; top: calc(var(--tr-box) / 2); translate: 0 -50%; padding: .2cqw .8cqw; font-size: 1.5cqw; font-weight: bold;
+            color: #fff; border: .15cqw solid #fff; }
+  .tr-tag:empty, .tr-cap:empty { display: none; }
+  .tr-cap { position: absolute; left: 50%; bottom: calc(var(--tr-box) + 2%); translate: -50% 0; width: 92%; display: flex; flex-direction: column;
+            align-items: center; gap: .4cqw; font-size: 3.2cqw; font-weight: 900; color: #FFE14D; -webkit-text-stroke: .5cqw #000; paint-order: stroke fill; }
+  .tr-flash { background: #fff; opacity: 0; }
+  .tr-card { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.4cqw;
+             background: #000; color: var(--gold-light); font-family: var(--font-title); text-align: center; }
+  .tr-band { width: 100%; padding: 1.4cqw 0; background: repeating-linear-gradient(-60deg, rgba(255,255,255,.1) 0 .3cqw, transparent .3cqw 1.6cqw), var(--tr-band); }
+  .tr-band b { display: inline-block; font-size: 8cqw; line-height: 1.1; color: var(--gold-light); -webkit-text-stroke: .5cqw var(--gold-dark); paint-order: stroke fill; }
+  .tr-card img { width: 40%; max-height: 34%; object-fit: contain; }
+  .tr-card p { margin: 0; }
+  .tr-card .note { font-size: 2.6cqw; font-weight: bold; color: var(--gold-base); }
+  .tr-card .ask { font-size: 1.6cqw; color: var(--gold-light); opacity: .85; }
+  .tr-card button { margin-top: .6cqw; padding: .5cqw 2.4cqw; font: bold 1.6cqw var(--font-body); color: #111; cursor: pointer;
+                    background: var(--gold-base); border: .2cqw solid var(--gold-light); border-radius: .4cqw; }
+  /* Stage 13 popup: framed trailer thumbnail over the dimmed, blurred courtroom; clicked to play */
+  #trailerPopup { position: absolute; inset: 0; z-index: 229; /* under #trailer, which fades in over the dark zoom */
+                  display: flex; align-items: center; justify-content: center;
+                  background: rgba(0,0,0,var(--tr-pop-dim)); backdrop-filter: blur(var(--tr-pop-blur)); }
+  #trailerPopup[hidden], #trailerPopup [hidden] { display: none; }
+  .tr-pop { position: relative; width: var(--tr-pop-w); display: flex; flex-direction: column; gap: 1cqw; padding: 2.4cqw 1.8cqw 1.4cqw;
+            background: var(--ui-panel); color: var(--ui-text); cursor: pointer; }
+  .tr-pop:hover { --gold-base: var(--gold-light); } /* brighter frame, tab edge and corners */
+  .tr-pop .frame-tab { font-size: 1.4cqw; }
+  .tr-new { position: absolute; z-index: 2; right: -1.4cqw; top: -1.6cqw; width: 5cqw; aspect-ratio: 1; display: grid; place-items: center; rotate: -10deg;
+            border-radius: 50%; background: var(--tr-new); border: .2cqw solid rgba(255,255,255,.7); color: #fff; font: 900 1.3cqw var(--font-body);
+            box-shadow: 0 .2cqw .4cqw rgba(0,0,0,.5); }
+  .tr-thumb { position: relative; aspect-ratio: 16 / 9; overflow: hidden; --tr-box: var(--tr-thumb-box); border: 1px solid rgba(0,0,0,.6); }
+  .tr-thumb-scene { position: absolute; left: 0; top: 50%; width: 100%; aspect-ratio: 3 / 2; translate: 0 -55%; container-type: inline-size; }
+  .tr-thumb-cap { position: absolute; left: 4%; bottom: calc(var(--tr-box) + 4%); font-size: 2.4cqw; font-weight: 900; color: #FFE14D;
+                  -webkit-text-stroke: .4cqw #000; paint-order: stroke fill; }
+  .tr-play { position: absolute; left: 50%; top: 50%; width: 16%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
+             background: rgba(0,0,0,.55); border: .2cqw solid rgba(255,255,255,.85); }
+  .tr-play::after { content: ''; position: absolute; left: 38%; top: 29%; width: 34%; height: 42%; background: #fff; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+  .tr-play.live { animation: trPulse var(--tr-pulse) ease-in-out infinite; }
+  @keyframes trPulse { 0%, 100% { scale: .94; } 50% { scale: 1.06; } }
+  .tr-hint { margin: 0; display: flex; align-items: center; justify-content: center; gap: .6cqw; font-size: 1.6cqw; font-weight: bold;
+             color: var(--gold-light); animation: trBlink 1.4s ease-in-out infinite alternate; }
+  .tr-hint i, .tr-replay i { width: .9cqw; height: 1cqw; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+  @keyframes trBlink { to { opacity: .45; } }
+  .tr-expand { position: absolute; background: #000; }
+  .tr-replay { position: absolute; z-index: 11; right: 3%; bottom: 3%; display: flex; align-items: center; gap: .5cqw; padding: .4cqw 1.2cqw;
+               font: bold 1.3cqw var(--font-body); color: #fff; background: rgba(255,255,255,.15); border: .15cqw solid rgba(255,255,255,.5);
+               border-radius: 2cqw; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -392,6 +497,37 @@
   <div id="endOverlay" class="overlay" hidden>
     <div class="card outro"><span id="outroLabel"></span><h1 id="outroTitle"></h1><p id="outroNote"></p></div>
   </div>
+  <div id="trailer" hidden>
+    <div class="tr-shake">
+      <div class="tr-scene">
+        <div class="tr-wall"></div><div class="tr-floor"></div>
+        <div class="tr-chair b"></div><div class="tr-chair a"></div>
+        <div class="tr-char b sit"></div><div class="tr-char a sit"></div>
+        <div class="tr-table"><i class="leg"></i><i class="foot"></i><i class="top"></i></div>
+        <div class="tr-pack"></div>
+        <div class="tr-hit"></div>
+        <div class="tr-gavel"></div>
+      </div>
+      <div class="tr-bubble" hidden></div>
+      <div class="tr-sfx" hidden></div>
+    </div>
+    <div class="tr-sepia"></div><div class="tr-grain"></div><div class="tr-vignette"></div>
+    <div class="tr-box top"></div><div class="tr-box bottom"></div>
+    <div class="tr-tag"></div>
+    <div class="tr-cap"></div>
+    <div class="tr-flash"></div>
+    <div class="tr-card" hidden><div class="tr-band"><b></b></div><img alt=""><p class="note"></p><p class="ask"></p><button hidden></button></div>
+    <button class="tr-replay" hidden><i></i><span></span></button>
+  </div>
+  <div id="trailerPopup" hidden>
+    <div class="tr-pop">
+      <b class="tr-new"></b>
+      <div class="tr-thumb"><div class="tr-thumb-scene"></div><div class="tr-grain"></div><div class="tr-box top"></div><div class="tr-box bottom"></div>
+        <b class="tr-thumb-cap"></b><i class="tr-play"></i></div>
+      <p class="tr-hint"><i></i><span></span></p>
+    </div>
+    <div class="tr-expand" hidden></div>
+  </div>
 </div>
 <div id="bar">
   <button id="prev" class="nav"></button>
@@ -418,6 +554,29 @@ const JUDGMENT_RIDERS = {
 const CLOSING_LINE = '이상으로 재판을 마칩니다. 폐정합니다.';
 // Outro card (stage 13)
 const OUTRO = { label: '다음 사건', title: '커피 한 잔 더치페이 사건', note: '곧 개정' };
+// Stage 13 reenactment trailer (TRAILER_ENABLED); OUTRO is the card used when it is off
+const TRAILER_TEXT = {
+  reenact: '※ 재연입니다',
+  tags: { A: 'A', B: 'B' },
+  setup: ['핫팩을 준 A,', '그런데 B가 그걸 다른 이성 친구에게 줬다'],
+  lines: [
+    { who: 'A', text: '내가 너 쓰라고 준걸 왜 걔한테 줘?!' },
+    { who: 'B', text: '아니, 손 시리다길래 그냥 준거야..' },
+    { who: 'A', text: '그니까, 걔가 춥던 말던 그게 너랑 무슨 상관인데!! 내 손은 안 시렵니?' },
+    { who: 'B', text: '아니 그럼 네가 쓰지!' },
+  ],
+  captions: { line1: '분노 게이지 상승 중', line2: '눈치 보는 중', line3: '폭발', line4: '반격', smash: '이 사건, 법정에서 가리겠습니다' },
+  smash: '땅!',
+  title: '핫팩 사건',
+  note: '다음 재판 · 곧 개정',
+  ask: '당신이라면, 어느 쪽 손을 들어주시겠습니까?',
+  restart: '처음부터',
+  replay: '다시 보기',
+  popupTab: '다음 재판 예고편',
+  popupNew: 'NEW',
+  popupCaption: '핫팩 사건',
+  popupHint: '눌러서 다음 재판 예고편 보기', // the leading play triangle is a CSS shape
+};
 const NAV_LABELS = { prev: '이전 단계', next: '다음 단계' }; // arrow buttons (screen readers)
 const PANEL_TABS = { case: '사건명', outro: '다음 재판', issues: '쟁점', seal: '재판 기록' }; // ribbon tabs on framed panels (issues/seal: document case panel)
 // Words shown in the highlight color inside the dialogue box
@@ -621,6 +780,36 @@ const LOGO_NEXT_BUTTON_ENABLED = false; // true: ▶ / → on the logo works lik
 const LOGO_WIDTH_PCT = 80;              // % of the container width (and max % of its height)
 const LOGO_FADEIN_MS = 600;
 const LOGO_OUT_MS = 1000;
+// Stage 13 trailer (~13 s, plays on its own). false: the old next-trial card (OUTRO)
+const TRAILER_ENABLED = true;
+const TRAILER_TIMING_MS = { setup: 1600, line1: 2000, line2: 1800, line3: 2400, line4: 1500, smash: 1600, card: 2200 };
+const TRAILER_CUT_TRANSITION = 'flash'; // 'flash' (white flash between cuts) | 'cut'
+const TRAILER_CAPTIONS_ENABLED = true;  // per-cut variety captions (the setup captions always show)
+const TRAILER_SOUND_ENABLED = true;
+const GAVEL_SMASH_HITS = 1;             // 2~3: repeats the strike 500 ms apart, the last one hardest
+const TRAILER_ZOOM = { line1: 1.7, line2: 1.7, line3: 1.9, line4: 1.8, smash: 2.2, push: 0.1 }; // push: slow extra zoom over each cut
+const TRAILER_SHAKE = { line3: { ms: 300, cqw: 0.6 }, line4: { ms: 400, cqw: 1 }, smash: { ms: 500, cqw: 1.6 } };
+const TRAILER_FLASH_MS = 80;
+const TRAILER_FADEIN_MS = 300;
+const TRAILER_LETTERBOX_PCT = 12;  // each of the top and bottom bars, % of the stage height
+const TRAILER_SEPIA = 0.25;        // sepia overlay opacity
+const TRAILER_GRAIN_OPACITY = 0.16;
+const TRAILER_VIGNETTE = 0.7;      // edge darkness
+// Popup before the trailer (stage 13): waits for a click. false: the trailer plays as soon as stage 13 starts
+const TRAILER_POPUP_ENABLED = true;
+const TRAILER_POPUP_NEXT_BUTTON_ENABLED = false; // true: next button / right arrow on the popup works like a click
+const TRAILER_REPLAY_BUTTON = true;              // small replay button on the end card
+const TRAILER_POPUP_DELAY_MS = 400;              // after stage 13 starts (the adjournment has ended)
+const TRAILER_POPUP_WIDTH_PCT = 52;
+const TRAILER_POPUP_DIM = 0.5;
+const TRAILER_POPUP_BLUR_PX = 2;
+const TRAILER_POPUP_IN_MS = 450;                 // rise + bounce
+const TRAILER_POPUP_PULSE_MS = 1600;             // play button pulse period
+const TRAILER_POPUP_EXPAND_MS = 350;             // dark zoom from the thumbnail to the full frame
+const TRAILER_POPUP_THUMB_BOX_PCT = 6;           // thumbnail letterbox bars, % of its height
+const TRAILER_POPUP_NEW_COLOR = '#C0262E';
+const TRAILER_COLORS = { wallTop: '#4a1c22', wallBottom: '#2a1214', floorTop: '#3a2116', floorBottom: '#1a0d08', chair: '#2a1a12',
+                         table: '#7a4a2a', tableDark: '#4a2a16', pack: '#F08A24', packEdge: '#5a2a08', band: '#6B1A26' };
 // h hair, s skin, E eyes, c clothes, A accent (collar/tie)
 const PALETTES = {
   judge:      { c: '#1a1a1a', A: '#eeeeee', p: '#111111' },
@@ -1442,6 +1631,255 @@ function endLogo() {
 
 // Stages 0~13. name is shown as a subtitle when the stage starts (empty = no subtitle).
 // autoNext: chain into the next stage without ▶. waitsForInput: no safety timer (waits for the user)
+// ===== Stage 13 trailer: reenactment-drama teaser =====
+const trailer = document.getElementById('trailer');
+const trq = sel => trailer.querySelector(sel);
+const [trShakeEl, trScene, trPack, trHit, trGavel, trBubble, trSfx, trTag, trCap, trFlashEl, trCard] =
+  ['.tr-shake', '.tr-scene', '.tr-pack', '.tr-hit', '.tr-gavel', '.tr-bubble', '.tr-sfx', '.tr-tag', '.tr-cap', '.tr-flash', '.tr-card'].map(trq);
+const trChars = { B: trq('.tr-char.b'), A: trq('.tr-char.a') };
+// B: prosecutor sprite facing right (left seat); A: defender sprite mirrored, facing left (right seat)
+trChars.B.innerHTML = spriteSVG('side', PALETTES.prosecutor, false) + `<b>${TRAILER_TEXT.tags.B}</b><div class="tr-fx"></div>`;
+trChars.A.innerHTML = spriteSVG('side', PALETTES.defender, true) + `<b>${TRAILER_TEXT.tags.A}</b><div class="tr-fx"></div>`;
+// Pixel gavel: head (face down) on the left, handle to the right; rotates around the head's bottom center
+trGavel.innerHTML = `<svg viewBox="0 0 32 14"><rect x="9" y="5" width="20" height="4" fill="#5e3216"/><rect x="9" y="5" width="20" height="1" fill="#7a4624"/>`
+  + `<rect x="29" y="4" width="3" height="6" fill="#3a1c0a"/><rect x="0" y="0" width="9" height="14" fill="#4a2410"/><rect x="1" y="1" width="2" height="12" fill="#6e3a1c"/>`
+  + `<rect x="0" y="2" width="9" height="1" fill="#2a1206"/><rect x="0" y="11" width="9" height="1" fill="#2a1206"/><rect x="0" y="13" width="9" height="1" fill="#2a1206"/></svg>`;
+trHit.innerHTML = '<i></i>'.repeat(12) + '<b></b>'.repeat(12);
+trSfx.textContent = TRAILER_TEXT.smash;
+trCard.querySelector('b').textContent = TRAILER_TEXT.title;
+trCard.querySelector('img').src = 'logo.png';
+trCard.querySelector('.note').textContent = TRAILER_TEXT.note;
+trCard.querySelector('.ask').textContent = TRAILER_TEXT.ask;
+const trRestart = trCard.querySelector('button');
+trRestart.textContent = TRAILER_TEXT.restart;
+trRestart.onclick = () => goTo(0);
+const trGrain = `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>`; // opaque gray noise, blended as overlay
+[['--tr-box', TRAILER_LETTERBOX_PCT + '%'], ['--tr-sepia', TRAILER_SEPIA], ['--tr-grain-op', TRAILER_GRAIN_OPACITY], ['--tr-vignette', TRAILER_VIGNETTE],
+ ['--tr-grain', `url("data:image/svg+xml,${encodeURIComponent(trGrain)}")`], ['--tr-wall-top', TRAILER_COLORS.wallTop], ['--tr-wall-bottom', TRAILER_COLORS.wallBottom],
+ ['--tr-floor-top', TRAILER_COLORS.floorTop], ['--tr-floor-bottom', TRAILER_COLORS.floorBottom], ['--tr-chair', TRAILER_COLORS.chair], ['--tr-table', TRAILER_COLORS.table],
+ ['--tr-table-dark', TRAILER_COLORS.tableDark], ['--tr-pack', TRAILER_COLORS.pack], ['--tr-pack-edge', TRAILER_COLORS.packEdge], ['--tr-band', TRAILER_COLORS.band],
+].forEach(([k, v]) => stage.style.setProperty(k, v)); // on the stage: the popup thumbnail uses them too
+const TR_FOCUS = { wide: [50, 58], A: [68, 62], B: [32, 62], pack: [50, 65.4] }; // scene % kept at the frame center while zoomed
+// Head-top shapes per line: red bang (!), sweat drop, cross vein
+const TR_BANG = w => `<svg viewBox="0 0 10 30" style="width:${w}cqw"><polygon points="1.5,0 8.5,0 6.5,20 3.5,20" fill="#E0242E" stroke="#fff"/><circle cx="5" cy="25.5" r="3.2" fill="#E0242E" stroke="#fff"/></svg>`;
+const TR_FX = {
+  bang: TR_BANG(1.6),
+  bigBang: TR_BANG(3),
+  sweat: '<i class="sweat"></i>',
+  vein: '<svg viewBox="0 0 20 20" style="width:2.4cqw"><path d="M2,8Q8,8 8,2M12,2Q12,8 18,8M18,12Q12,12 12,18M8,18Q8,12 2,12" fill="none" stroke="#E0242E" stroke-width="2.6" stroke-linecap="round"/></svg>',
+};
+const TR_LINE_FX = [{ fx: ['bang'] }, { fx: ['sweat', 'sweat'], small: true, sound: 'ding' },
+                    { fx: ['bang', 'bang', 'vein'], shake: 'line3' }, { fx: ['bigBang'], shake: 'line4', sound: 'thud' }];
+
+const trNodes = new Set(); // playing oscillators, stopped by ◀
+function trTone(type, f0, f1, ms, vol) {
+  if (!TRAILER_SOUND_ENABLED) return;
+  try {
+    audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+    const t = audioCtx.currentTime, d = ms / 1000, osc = audioCtx.createOscillator(), amp = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(f0, t);
+    osc.frequency.exponentialRampToValueAtTime(f1, t + d * .6);
+    amp.gain.setValueAtTime(vol, t);
+    amp.gain.exponentialRampToValueAtTime(.001, t + d);
+    osc.connect(amp).connect(audioCtx.destination);
+    osc.onended = () => trNodes.delete(osc);
+    trNodes.add(osc);
+    osc.start(t);
+    osc.stop(t + d);
+  } catch {} // no Web Audio: silent
+}
+const TR_SOUNDS = { ding: () => trTone('sine', 700, 1400, 450, .3), thud: () => trTone('sine', 110, 38, 450, .9) };
+// Frames the scene on a focus point at scale s, then pushes in slowly by TRAILER_ZOOM.push over the cut
+function trZoom([fx, fy], s, ms) {
+  const t = (p, k) => Math.min(0, Math.max(100 - 100 * k, 50 - p * k)); // clamped so the scene always fills the frame
+  const tf = k => `translate(${t(fx, k)}%, ${t(fy, k)}%) scale(${k})`;
+  trScene.animate([{ transform: tf(s) }, { transform: tf(s + TRAILER_ZOOM.push) }], { duration: ms, fill: 'forwards' });
+}
+const trFlash = ms => trFlashEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms });
+function trShake(key, k = 1) {
+  const { ms, cqw } = TRAILER_SHAKE[key];
+  trShakeEl.animate(Array.from({ length: 9 }, (_, i) => {
+    const a = i === 8 ? 0 : cqw * k * (1 - i / 8);
+    return { translate: `${i % 2 ? -a : a}cqw ${(i % 3 - 1) * a * .6}cqw` };
+  }), { duration: ms });
+}
+function trCaption(lines) {
+  trCap.replaceChildren(...lines.map(l => tag('span', l)));
+}
+function trCut(focus, s, ms) {
+  if (TRAILER_CUT_TRANSITION === 'flash') trFlash(TRAILER_FLASH_MS);
+  trZoom(focus, s, ms);
+}
+const trPop = el => el.animate([{ scale: .3, opacity: 0 }, { scale: 1.2, opacity: 1, offset: .7 }, { scale: 1, opacity: 1 }], { duration: 220, easing: 'ease-out' });
+// Back to the trailer's first frame: animations, effects, sounds and card cleared
+function resetTrailer() {
+  trailer.getAnimations({ subtree: true }).forEach(a => a.cancel());
+  trNodes.forEach(o => { try { o.stop(); } catch {} });
+  trNodes.clear();
+  Object.values(trChars).forEach(c => { c.classList.remove('talk-open', 'small'); c.lastChild.replaceChildren(); });
+  trBubble.hidden = trSfx.hidden = trCard.hidden = trRestart.hidden = true;
+  trTag.textContent = '';
+  trCaption([]);
+}
+function trStrike(first, k) {
+  trFlash(60);
+  trShake('smash', k);
+  if (TRAILER_SOUND_ENABLED) gavelSound();
+  if (first) trPack.animate([{ scale: '1 1' }, { scale: '1.4 .3' }], { duration: 60, fill: 'forwards' });
+  [...trHit.children].forEach((el, i) => {
+    const deg = i % 12 * 30 + (i < 12 ? 0 : Math.random() * 30 - 15);
+    if (i < 12) el.animate([{ transform: `rotate(${deg}deg) translateX(1.2cqw) scaleX(.2)`, opacity: 1 },
+                            { transform: `rotate(${deg}deg) translateX(2.6cqw) scaleX(1)`, opacity: 0 }], { duration: 350, easing: 'ease-out' });
+    else {
+      const r = (2.5 + Math.random() * 3) * k, rad = deg * Math.PI / 180;
+      el.animate([{ translate: '0 0', rotate: '0deg', opacity: 1 },
+                  { translate: `${Math.cos(rad) * r}cqw ${Math.sin(rad) * r - 1}cqw`, rotate: `${Math.random() * 360}deg`, opacity: 0 }],
+                 { duration: 600, easing: 'ease-out', fill: 'both' });
+    }
+  });
+  trSfx.hidden = false;
+  trSfx.animate([{ scale: 2.4, opacity: 0 }, { scale: .9, opacity: 1, offset: .6 }, { scale: 1, opacity: 1 }], { duration: 300, easing: 'ease-out' });
+}
+async function playTrailer(g) {
+  const T = TRAILER_TIMING_MS, caps = TRAILER_CAPTIONS_ENABLED ? TRAILER_TEXT.captions : {};
+  resetTrailer();
+  trailer.hidden = false;
+  // 0 setup: wide shot, the pack slides from A to the middle
+  trailer.animate([{ opacity: 0 }, { opacity: 1 }], { duration: TRAILER_FADEIN_MS });
+  trZoom(TR_FOCUS.wide, 1, T.setup);
+  trTag.textContent = TRAILER_TEXT.reenact;
+  trCaption(TRAILER_TEXT.setup.slice(0, 1));
+  trPack.animate([{ left: '58%' }, { left: '50%' }], { delay: 300, duration: 600, easing: 'ease-out', fill: 'both' });
+  await wait(T.setup / 2);
+  if (g !== gen) return;
+  trCaption(TRAILER_TEXT.setup);
+  await wait(T.setup / 2);
+  // 1~4 close-ups on the speaker
+  for (const [i, { who, text }] of TRAILER_TEXT.lines.entries()) {
+    if (g !== gen) return;
+    const key = 'line' + (i + 1), cut = TR_LINE_FX[i], el = trChars[who];
+    Object.values(trChars).forEach(c => c.lastChild.replaceChildren());
+    trCut(TR_FOCUS[who], TRAILER_ZOOM[key], T[key]);
+    trCaption(caps[key] ? [caps[key]] : []);
+    el.classList.toggle('small', !!cut.small);
+    setTalking(el, true);
+    el.lastChild.innerHTML = cut.fx.map(f => TR_FX[f]).join('');
+    [...el.lastChild.children].forEach(trPop);
+    trBubble.textContent = text;
+    trBubble.hidden = false;
+    trPop(trBubble);
+    if (cut.shake) trShake(cut.shake);
+    TR_SOUNDS[cut.sound]?.();
+    await wait(T[key]);
+    setTalking(el, false);
+  }
+  if (g !== gen) return;
+  // 5 smash: the gavel comes in tilted, winds up, then flattens the pack
+  const t0 = performance.now();
+  Object.values(trChars).forEach(c => c.lastChild.replaceChildren());
+  trBubble.hidden = true;
+  trCut(TR_FOCUS.pack, TRAILER_ZOOM.smash, T.smash);
+  trCaption(caps.smash ? [caps.smash] : []);
+  const pose = (x, y, deg) => `translate(${x}%, ${y}%) rotate(${deg}deg)`;
+  const swing = (frames, ms, easing) => finished(trGavel.animate(frames, { duration: ms, easing, fill: 'forwards' }));
+  await swing([{ transform: pose(160, -260, -25), opacity: 0 }, { transform: pose(0, -60, -25), opacity: 1 }], 250, 'ease-out');
+  if (g !== gen) return;
+  await swing([{ transform: pose(0, -60, -25), opacity: 1 }, { transform: pose(0, -95, -34), opacity: 1, offset: .4 },
+               { transform: pose(1.5, -93, -33), opacity: 1, offset: .55 }, { transform: pose(-1.5, -97, -35), opacity: 1, offset: .7 },
+               { transform: pose(1.5, -93, -33), opacity: 1, offset: .85 }, { transform: pose(0, -95, -34), opacity: 1 }], 450);
+  const hits = Math.max(1, GAVEL_SMASH_HITS);
+  for (let h = 0; h < hits; h++) {
+    if (g !== gen) return;
+    if (h) {
+      await swing([{ transform: pose(0, 0, 0), opacity: 1 }, { transform: pose(0, -80, -28), opacity: 1 }], 200, 'ease-out');
+      await wait(210);
+      if (g !== gen) return;
+    }
+    await swing([{ transform: pose(0, h ? -80 : -95, h ? -28 : -34), opacity: 1 }, { transform: pose(0, 0, 0), opacity: 1 }], 90, 'ease-in');
+    if (g !== gen) return;
+    trStrike(h === 0, h === hits - 1 ? 1 : .6);
+  }
+  await wait(Math.max(400, T.smash - (performance.now() - t0)));
+  if (g !== gen) return;
+  // 6 case card: blackout, band sweeps in, the title slams down, then logo and lines
+  trCaption([]);
+  trTag.textContent = '';
+  trCard.hidden = false;
+  const [band, img, note, ask] = trCard.children, title = band.firstChild;
+  const fade = (el, delay, ms) => el.animate([{ opacity: 0 }, { opacity: 1 }], { delay, duration: ms, fill: 'both' });
+  fade(trCard, 0, 250);
+  band.animate([{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { delay: 250, duration: 250, easing: 'ease-out', fill: 'both' });
+  title.animate([{ scale: 2.2, opacity: 0 }, { scale: .95, opacity: 1, offset: .7 }, { scale: 1, opacity: 1 }], { delay: 450, duration: 250, easing: 'ease-in', fill: 'both' });
+  fade(img, 800, 400);
+  fade(note, 1200, 300);
+  fade(ask, 1600, 300);
+  await wait(620);
+  if (g !== gen) return;
+  if (TRAILER_SOUND_ENABLED) gavelSound(); // the title lands
+  await wait(T.card - 620);
+  if (g !== gen) return;
+  trRestart.hidden = false;
+}
+
+// Stage 13 popup: framed thumbnail of the reenactment, clicked to play the trailer
+const trPopup = document.getElementById('trailerPopup');
+const trPanel = trPopup.querySelector('.tr-pop'), trThumb = trPanel.querySelector('.tr-thumb'), trPlay = trPanel.querySelector('.tr-play');
+const trExpand = trPopup.querySelector('.tr-expand'), trReplay = trq('.tr-replay');
+trPanel.classList.add('frame');
+trPanel.classList.toggle('patterned', FRAME_PATTERN);
+trPanel.prepend(frameTab(TRAILER_TEXT.popupTab));
+trPanel.querySelector('.tr-new').textContent = TRAILER_TEXT.popupNew;
+trPanel.querySelector('.tr-thumb-cap').textContent = TRAILER_TEXT.popupCaption;
+trPanel.querySelector('.tr-hint span').textContent = TRAILER_TEXT.popupHint;
+trReplay.lastChild.textContent = TRAILER_TEXT.replay;
+const trStill = trScene.cloneNode(true); // still of the setup shot, pack already in the middle
+trStill.querySelector('.tr-pack').style.left = '50%';
+trPanel.querySelector('.tr-thumb-scene').append(trStill);
+[['--tr-pop-w', TRAILER_POPUP_WIDTH_PCT + '%'], ['--tr-pop-dim', TRAILER_POPUP_DIM], ['--tr-pop-blur', TRAILER_POPUP_BLUR_PX + 'px'],
+ ['--tr-pulse', TRAILER_POPUP_PULSE_MS + 'ms'], ['--tr-thumb-box', TRAILER_POPUP_THUMB_BOX_PCT + '%'], ['--tr-new', TRAILER_POPUP_NEW_COLOR],
+].forEach(([k, v]) => stage.style.setProperty(k, v));
+let trStart = 'popup'; // how stage 13 starts: 'popup' (after the delay) | 'popupNow' (back from the trailer) | 'play' (replay)
+let trPlaying = false; // stage 13 is past the popup, so prev goes back to it
+let trPopClick = null; // set while the popup waits; null afterwards, so repeated clicks do nothing
+trPanel.onclick = () => trPopClick?.();
+trReplay.onclick = () => { trStart = 'play'; goTo(13); };
+function resetTrailerPopup() {
+  trPopup.getAnimations({ subtree: true }).forEach(a => a instanceof CSSAnimation || a.cancel());
+  trPopup.hidden = trExpand.hidden = trReplay.hidden = true;
+  trPlay.classList.remove('live');
+  trPopClick = null;
+}
+// Shows the popup after delay ms; resolves once it is clicked and the dark zoom has filled the frame
+async function trailerPopup(g, delay) {
+  await wait(delay);
+  if (g !== gen) return;
+  trPopup.hidden = false;
+  const clicked = new Promise(r => trPopClick = r);
+  if (TRAILER_POPUP_NEXT_BUTTON_ENABLED) {
+    lineSkip = () => trPopClick?.();
+    nextBtn.disabled = false;
+  }
+  trPanel.animate([{ translate: '0 8cqw', scale: .8, opacity: 0 }, { translate: '0 -.5cqw', scale: 1.04, opacity: 1, offset: .7 },
+                 { translate: '0 0', scale: 1, opacity: 1 }], { duration: TRAILER_POPUP_IN_MS, easing: 'ease-out' });
+  trTone('sine', 520, 1250, 160, .3); // short pop sound
+  setTimeout(() => g === gen && trPlay.classList.add('live'), TRAILER_POPUP_IN_MS);
+  await clicked;
+  trPopClick = lineSkip = null;
+  nextBtn.disabled = true;
+  try { // the click is the user gesture that lets audio start
+    audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx.resume();
+  } catch {}
+  const s = stage.getBoundingClientRect(), t = trThumb.getBoundingClientRect();
+  const from = { left: (t.left - s.left) / s.width * 100 + '%', top: (t.top - s.top) / s.height * 100 + '%',
+                 width: t.width / s.width * 100 + '%', height: t.height / s.height * 100 + '%', opacity: .6 };
+  trExpand.hidden = false;
+  await finished(trExpand.animate([from, { left: '0%', top: '0%', width: '100%', height: '100%', opacity: 1 }],
+                                  { duration: TRAILER_POPUP_EXPAND_MS, easing: 'ease-in', fill: 'forwards' }));
+}
+
 const STAGES = [
   { name: '', autoNext: true, waitsForInput: true, run: async g => { // 0 role select
     roleOverlay.classList.remove('fade');
@@ -1599,7 +2037,22 @@ const STAGES = [
     if (g !== gen) return;
     els.judge.classList.add('out');
   } },
-  { name: '', run: async () => { endOverlay.hidden = false; } }, // 13 outro: next trial teaser (last stage)
+  { name: '', waitsForInput: TRAILER_ENABLED && TRAILER_POPUP_ENABLED, run: async g => { // 13 outro (last stage): trailer popup, trailer, or the next trial card
+    if (!TRAILER_ENABLED) { endOverlay.hidden = false; return; }
+    const start = trStart;
+    trStart = 'popup';
+    trPlaying = !TRAILER_POPUP_ENABLED || start === 'play';
+    if (!trPlaying) {
+      await trailerPopup(g, start === 'popupNow' ? 0 : TRAILER_POPUP_DELAY_MS);
+      if (g !== gen) return;
+      trPlaying = true;
+    }
+    const play = playTrailer(g);
+    await wait(TRAILER_FADEIN_MS); // the trailer fades in over the dark zoom, then the popup goes
+    if (g === gen) trPopup.hidden = true;
+    await play;
+    if (g === gen && TRAILER_REPLAY_BUTTON) trReplay.hidden = false;
+  } },
 ];
 
 let cur = 0; // stage being played (or last played)
@@ -1649,6 +2102,9 @@ function buildState(i) {
   gauge.hidden = !(i >= 7 && i <= 10); // stage 6 shows it when it starts
   setGauge(gaugeAt(i), false);
   roleOverlay.hidden = endOverlay.hidden = true;
+  resetTrailer();
+  trailer.hidden = true;
+  resetTrailerPopup();
   endLogo();
   closeup.classList.remove('show');
   closeJudge.className = 'avatar';
@@ -1678,7 +2134,11 @@ function goTo(i) {
 }
 
 document.getElementById('pickJuror').onclick = () => pickRole?.();
-prevBtn.onclick = () => { if (!prevBtn.disabled) goTo(cur - 1); };
+prevBtn.onclick = () => {
+  if (prevBtn.disabled) return;
+  if (cur === 13 && TRAILER_ENABLED && TRAILER_POPUP_ENABLED && trPlaying) { trStart = 'popupNow'; return goTo(13); } // trailer or end card: back to the popup
+  goTo(cur - 1);
+};
 nextBtn.onclick = () => {
   if (nextBtn.disabled) return;
   if (lineSkip) return lineSkip();
