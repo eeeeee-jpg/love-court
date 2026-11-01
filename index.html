@@ -336,6 +336,7 @@
   .chat-field::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: var(--ci-b); pointer-events: none;
     background: linear-gradient(var(--gold-light), var(--gold-base), var(--gold-dark));
     mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; }
+  #stage.ci-pad32 .chat-field { height: auto; padding: var(--pp-bub-y) var(--pp-bub-x); } /* CHAT_INPUT_PAD_V32 */
   .chat-field:has(#chatInput:disabled) { opacity: .55; filter: grayscale(1); box-shadow: inset 0 2px 6px rgba(0,0,0,.45); }
   .chat-field:has(#chatInput:disabled)::before { display: none; }
   .chat-field:has(#chatInput.shake) { animation: shake .3s; }
@@ -457,7 +458,7 @@
   #roleOverlay.v27 .card button.role-row.picked { transform: scale(.985); }
   /* PIXEL_UI_V29 */
   #roleOverlay.pf29 .card button.role-row.picked { transform: none; filter: brightness(1.12); } /* no fractional scale on text */
-  .pf29 :is(h1, b, small, span, p) { font-weight: 700; }
+  .pf29 :is(h1, b, small, span, p) { font-weight: var(--pf-w, 700); } /* --pf-w: PIXEL_TEXT_WEIGHT (v31) */
   .pf29 :is(b, small, span, p):not(.frame-tab b) { text-shadow: var(--fb) 0 0 currentColor; }
   #roleOverlay.pf29 .card button.role-row.hl :is(b, small) { text-shadow: var(--fb) 0 0 currentColor, 0 1px 0 rgba(0,0,0,.55), var(--fb) 1px 0 rgba(0,0,0,.55); }
   #roleOverlay.pf29.pf-solid .card h1 { background: none; color: var(--gold-base); filter: none;
@@ -1294,6 +1295,8 @@ const CHAT_FADE_CQW = 4;               // older messages fade out over this heig
 const CHAT_INPUT = { heightCqw: 5.2, radiusPx: 10, borderPx: 2, padXCqw: 1.8 };
 const CHAT_INPUT_BAR = { gapCqw: 2, padYCqw: 1.2, band: 'rgba(255,247,230,0.06)', fieldBg: 'rgba(255,247,230,0.10)',
                          glow: 'rgba(212,175,55,0.18)', text: '#FFF7E6', placeholder: 'rgba(245,236,215,0.78)', caretMs: 1000 };
+// Input field v32: padding = the message bubble's (PANEL_PADDING.bubblePadY/XCqw), height from its content. false = before (fixed CHAT_INPUT.heightCqw)
+const CHAT_INPUT_PAD_V32 = true;
 const CHAT_NOTICE_COLOR = '#E8352F';   // block notice under the input (deep red, readable on the dark log)
 const CHAT_VISIBLE_MESSAGES = 6;  // trial log keeps this many messages, stacked top to bottom; older ones scroll up out of view
 // ----- Trial log readability v2 (false = before). Font sizes unchanged; PANEL_STYLE.bgOpacity unchanged -----
@@ -1368,6 +1371,15 @@ const GAUGE_PANEL_SCALE = 1.5;
 const GAUGE_ORNATE = { borderPx: 5, innerGapPx: 3, innerLinePx: 1.5, cornerCqw: 3, cornerOutPx: 6, radiusPx: 10 }; // x GAUGE_PANEL_SCALE
 const GAUGE_PADDING = { x: 1.2, top: 1.0, bottom: 1.0, rowGap: 0.8, labelToBar: 1.0, tabGapMin: 0.8 }; // x H (text height)
 const GAUGE_BAR = { cells: 10, track: 'rgba(0,0,0,0.45)', cellGapPx: 1 };
+// ----- v30: role names x ROLE_NAME_SCALE; the gauge (frame, padding, text, bar) x GAUGE_SCALE.
+// Pixel text stays on whole multiples of 11 px (so the ratio is approximate); other px values round to even numbers. false = before -----
+const ROLE_NAME_V30 = true;
+const ROLE_NAME_SCALE = 1.25;
+const GAUGE_SCALE_V30 = true;
+const GAUGE_SCALE = 0.6;
+// ----- v31: v29 pixel text one weight lighter: Galmuri11-Bold (700) -> Galmuri11 (400); faux bold unchanged. false = before -----
+const PIXEL_WEIGHT_V31 = true;
+const PIXEL_TEXT_WEIGHT = PIXEL_WEIGHT_V31 ? 400 : 700;
 const ROLE_HEAD_ROWS = 11;
 const ROLE_HEAD_FILL = 0.94;            // head sprite height <= this share of the slot (integer pixel scale; the rest is headroom)               // advocate sprites cropped to rows 0..10 (head + collar + shoulders)
 const DEMO_PICK_ROLE = 'juror';
@@ -1665,7 +1677,7 @@ if (V27) {
    ['--r7-line', X.innerLinePx + 'px'], ['--r7-corner', X.cornerCqw + 'cqw'], ['--r7-out', X.cornerOutPx + 'px'], ['--r7-fill', U.panelFill],
    ['--r7-stripe', U.stripeOpacity], ['--r7-row-fill', U.rowFill], ['--r7-sep', U.separator], ['--r7-name', U.name], ['--r7-muted', U.muted],
    ['--r7-hl-from', U.highlightFrom], ['--r7-hl-to', U.highlightTo], ['--r7-hl-text', U.highlightText], ['--r7-hl-line', U.highlightLine],
-   ['--r7-row', rowH + 'cqw'], ['--r7-slot', rowH * U.slotRatio + 'cqw'], ['--r7-name-size', rowH * U.nameRatio + 'cqw'],
+   ['--r7-row', rowH + 'cqw'], ['--r7-slot', rowH * U.slotRatio + 'cqw'], ['--r7-name-size', rowH * U.nameRatio * (ROLE_NAME_V30 ? ROLE_NAME_SCALE : 1) + 'cqw'],
    ['--r7-name-gap', U.nameGapCqw + 'cqw'], ['--r7-bottom-extra', X.bottomExtraCqw + 'cqw']].forEach(([k, v]) => roleOverlay.style.setProperty(k, v));
 }
 // ----- Pixel font (v28): register local faces, load them during the logo, snap sizes to whole multiples -----
@@ -1733,7 +1745,7 @@ function applyPixelUI29() {
   const fam = `'${PIXEL_BOLD_FAMILY}', var(--font-title)`;
   roleOverlay.classList.add('pf29');
   roleOverlay.classList.toggle('pf-solid', PIXEL_TITLE_SOLID_V29);
-  [['--fb', PIXEL_FAUX_BOLD_PX + 'px'], ['--rib-k', ROLE_RIBBON_SCALE], ['--rib-c', ROLE_RIBBON_TEXT.color], ['--rib-s', ROLE_RIBBON_TEXT.shadow]]
+  [['--fb', PIXEL_FAUX_BOLD_PX + 'px'], ['--pf-w', PIXEL_TEXT_WEIGHT], ['--rib-k', ROLE_RIBBON_SCALE], ['--rib-c', ROLE_RIBBON_TEXT.color], ['--rib-s', ROLE_RIBBON_TEXT.shadow]]
     .forEach(([k, v]) => roleOverlay.style.setProperty(k, v));
   const set = (els, px) => els.forEach(el => Object.assign(el.style, { fontFamily: fam, fontSize: px + 'px' }));
   // Ribbon: 11 px x ROLE_RIBBON_SCALE (padding scales with it in CSS)
@@ -1741,7 +1753,7 @@ function applyPixelUI29() {
   if (tabB) { set([tabB], 11 * ROLE_RIBBON_SCALE); tab.style.fontSize = 11 * ROLE_RIBBON_SCALE + 'px'; }
   // Title: the largest multiple <= PIXEL_TITLE_SCALE that fits the card's inner width
   const h1 = roleCard.querySelector('h1'), inner = roleCard.clientWidth - parseFloat(getComputedStyle(roleCard).paddingLeft) * 2;
-  plateCtx.font = `700 11px '${PIXEL_BOLD_FAMILY}'`;
+  plateCtx.font = `${PIXEL_TEXT_WEIGHT} 11px '${PIXEL_BOLD_FAMILY}'`;
   const w11 = plateCtx.measureText(h1.textContent).width;
   const tk = Math.max(1, Math.min(PIXEL_TITLE_SCALE, Math.floor(inner / Math.max(1, w11))));
   set([h1], 11 * tk);
@@ -1887,6 +1899,7 @@ if (CHAT_PADDING_V22) {
     // Input bar: [pencil] [input] [send] + caret, block notice under it, on a faint band below a gold rule
     const mk = (t, className) => Object.assign(document.createElement(t), { className }); // (tag() is defined further down)
     const bar = mk('div', 'chat-inbar'), field = mk('div', 'chat-field');
+    stage.classList.toggle('ci-pad32', CHAT_INPUT_PAD_V32);
     chatInput.before(bar);
     field.innerHTML = '<svg class="pencil" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 14l1-4 8-8 3 3-8 8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" style="color:var(--gold-light)"/><path d="M9.5 3.5l3 3" stroke="currentColor" stroke-width="1.6" style="color:var(--gold-light)"/></svg>';
     field.append(chatInput, mk('i', 'chat-caret'), Object.assign(mk('span', 'send'), { ariaHidden: 'true' }));
@@ -2033,14 +2046,16 @@ const B = BUBBLE_BORDER, BT = BUBBLE_TEXT;
   el.classList.toggle('dark', FRAME_FILL === 'dark');
 });
 // v29 gauge: ornate frame (no pattern band / L marks), x GAUGE_PANEL_SCALE, labels from GAUGE_LABELS, pixel font sized by H
+const gS = GAUGE_SCALE_V30 ? GAUGE_SCALE : 1;
+const gq = (v, r = Math.round) => GAUGE_SCALE_V30 ? 2 * Math.round(v * gS / 2) : r(v); // v30: x GAUGE_SCALE, even px
 if (PIXEL_UI_V29) {
   const k = GAUGE_PANEL_SCALE, O = GAUGE_ORNATE;
   gauge.classList.remove('frame', 'patterned', 'dark');
   gauge.classList.add('v29');
-  gauge.style.width = GAUGE.width * k + '%';
+  gauge.style.width = GAUGE.width * k * gS + '%';
   gauge.insertAdjacentHTML('beforeend', [0, 1, 2, 3].map(i => r7CornerSVG(i, 'g7g', 'g7-corner', '--g7-out')).join(''));
-  [['--g-k', k], ['--g7-r', O.radiusPx * k + 'px'], ['--g7-b', Math.round(O.borderPx * k) + 'px'], ['--g7-gap', Math.round(O.innerGapPx * k) + 'px'],
-   ['--g7-line', O.innerLinePx * k + 'px'], ['--g7-corner', O.cornerCqw * k + 'cqw'], ['--g7-out', Math.round(O.cornerOutPx * k) + 'px'],
+  [['--g-k', k * gS], ['--g7-r', gq(O.radiusPx * k, v => v) + 'px'], ['--g7-b', gq(O.borderPx * k) + 'px'], ['--g7-gap', gq(O.innerGapPx * k) + 'px'],
+   ['--g7-line', gq(O.innerLinePx * k, v => v) + 'px'], ['--g7-corner', O.cornerCqw * k * gS + 'cqw'], ['--g7-out', gq(O.cornerOutPx * k) + 'px'],
    ['--g-track', GAUGE_BAR.track], ['--g-cell-gap', GAUGE_BAR.cellGapPx + 'px']].forEach(([n, v]) => gauge.style.setProperty(n, v));
   gauge.querySelectorAll('.g-row > span').forEach((el, i) => el.textContent = [GAUGE_LABELS.innocent, GAUGE_LABELS.protest][i]);
 }
@@ -2053,20 +2068,24 @@ function layoutGauge29() {
     gauge.classList.add('pf29');
     gauge.style.fontFamily = `'${PIXEL_BOLD_FAMILY}', var(--font-title)`;
     gauge.style.setProperty('--fb', PIXEL_FAUX_BOLD_PX + 'px');
+    gauge.style.setProperty('--pf-w', PIXEL_TEXT_WEIGHT);
     [['--rib-c', ROLE_RIBBON_TEXT.color], ['--rib-s', ROLE_RIBBON_TEXT.shadow]].forEach(([n, v]) => gauge.style.setProperty(n, v));
     gauge.querySelector('.frame-tab b').style.fontFamily = gauge.style.fontFamily; // .frame-tab b sets its own font shorthand
   }
-  const tabFont = PIXEL29 ? px11(1.2 * k * W / 100) : Math.round(1.2 * k * W / 100);
+  const tabFont = PIXEL29 ? px11(1.2 * k * gS * W / 100) : gq(1.2 * k * W / 100);
+  // v30 text size: pixel text snaps to 11 px multiples, other text to even px
+  const F = !GAUGE_SCALE_V30 ? H : PIXEL29 && pixelFontOK(PIXEL_BOLD_FAMILY) ? px11(1.1 * k * gS * W / 100) : gq(H);
   const tab = gauge.querySelector('.frame-tab');
-  gauge.style.setProperty('--g-font', H + 'px');
+  gauge.style.setProperty('--g-font', F + 'px');
   gauge.style.setProperty('--g-tab-font', tabFont + 'px');
-  gauge.style.setProperty('--g-h', H + 'px');
+  gauge.style.setProperty('--g-h', gq(H) + 'px');
   // Ribbon reach below the top edge (45% of its height) + max(top padding, ribbon gap)
   const tabH = tab.offsetHeight || tabFont * 1.8, reach = tabH * .45;
   const line = Math.round(GAUGE_ORNATE.innerGapPx * k) + GAUGE_ORNATE.innerLinePx * k; // padding counts from the inner gold line
-  [['--g-pad-x', Math.round(P.x * H + line) + 'px'], ['--g-pad-top', Math.ceil(Math.max(reach + P.tabGapMin * H, line + P.top * H)) + 'px'],
-   ['--g-pad-bottom', Math.round(P.bottom * H + line) + 'px'], ['--g-row-gap', Math.round(P.rowGap * H) + 'px'], ['--g-label-bar', Math.round(P.labelToBar * H) + 'px'],
-   ['--g-num-w', Math.ceil(H * 1.3) + 'px'], ['--g-arrow-w', Math.ceil(.9 * k * W / 100) + 'px'], ['--g-bar-h', Math.round(1 * k * W / 100) + 'px']]
+  [['--g-pad-x', gq(P.x * H + line) + 'px'], ['--g-pad-top', gq(Math.max(reach / gS + P.tabGapMin * H, line + P.top * H), Math.ceil) + 'px'],
+   ['--g-pad-bottom', gq(P.bottom * H + line) + 'px'], ['--g-row-gap', gq(P.rowGap * H) + 'px'], ['--g-label-bar', gq(P.labelToBar * H) + 'px'],
+   ['--g-num-w', (GAUGE_SCALE_V30 ? 2 * Math.ceil(F * 1.3 / 2) : Math.ceil(H * 1.3)) + 'px'], // fits the digits at the text size
+   ['--g-arrow-w', gq(.9 * k * W / 100, Math.ceil) + 'px'], ['--g-bar-h', gq(1 * k * W / 100) + 'px']]
     .forEach(([n, v]) => gauge.style.setProperty(n, v));
 }
 if (PIXEL_UI_V29) {
