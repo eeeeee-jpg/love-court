@@ -432,6 +432,10 @@
   #gavel.up svg { rotate: var(--gavel-raise); }
   /* Judge's right hand (screen left) follows the gavel */
   #closeup .rhand { transition: transform .1s; }
+  .door-anim { position: absolute; z-index: 24; translate: -50% -100%; pointer-events: none; }
+  /* SEATED_FIX_V9 hideHands: no forearms/hands on the desk; the right forearm + hand show only while the gavel strikes */
+  #closeup.hide-hands .avatar :is(.arms, .lhand) { display: none; }
+  #closeup.hide-hands .avatar:not(.striking) :is(.rhand, .rarm) { display: none; }
   #closeup .gavel-up .rhand { transform: translateY(-2px); }
   @keyframes gavel { 20% { translate: -6px 3px; } 40% { translate: 6px -3px; } 60% { translate: -4px 0; } 80% { translate: 3px 0; } }
   /* Verdict reactions (stage 12). Motion runs on the Web Animations API; these are the shapes */
@@ -778,6 +782,28 @@ const JUDGE_AVATAR_RAISE_PCT = 3;        // judge sprite up (% of stage height):
 const JUDGE_DESK_CLIP_V6 = { x: 43, y: 20.9, w: 14, h: 7.1 }; // desk part redrawn over the judge: front edge down (bg-top)
 const JUDGE_NAMEPLATE = { xPct: 50, yPct: 21.2, widthPct: 6, fontCqw: 8 / 4.5 * 0.5 }; // on the desk top's front edge; 75% wide, old text size
 const JUDGE_LABEL_V6 = { scale: 0.85, placement: 'side', topPct: 18, gapPx: 6 }; // 'side' = right of the head | 'above'
+// ----- Fix v10: walkers face where they go; the judge enters by one door and leaves by another, walking side-on.
+// false = before -----
+const WALK_FIX_V10 = true;
+const WALK_FACING_MODE = 'by_movement'; // 'by_movement' | 'legacy'
+const WALK_TURN_MS = 150;               // turn on the spot before walking / after arriving
+const WALK_TURN_MIN_RATIO = 0.25;       // horizontal part of a move must exceed this share of the vertical part to turn
+const JUDGE_DOOR_LEFT = { xPct: 21.6, yPct: 27 };  // floor in front of the doors in bg-top
+const JUDGE_DOOR_RIGHT = { xPct: 78.1, yPct: 27 };
+const JUDGE_ENTER_DOOR = 'left';        // 'left' | 'right'
+const JUDGE_EXIT_DOOR = 'right';
+const JUDGE_DOOR_FADE_MS = 200;
+const DOOR_ANIM_ENABLED = false;        // true: the door briefly opens (dark gap narrowing) as the judge appears/leaves
+const DOOR_ANIM = { ms: 150, wPct: 5, hPct: 13, color: 'rgba(10,6,4,0.85)' };
+// ----- Fix v9: advocate nameplates on the desk edge away from the seat; close-up judge seated lower, hands only for the gavel.
+// false = before -----
+const SEATED_FIX_V9 = true;
+const NAMEPLATE_SIDE_EDGE = 'away_from_avatar'; // 'away_from_avatar' (center-facing edge, length middle) | 'center' (v4 spot)
+const NAMEPLATE_EDGE_INSET_PX = 4;              // from that edge (ref px)
+const NAMEPLATE_MIN_LENGTH_SCALE = 0.85;        // the plate may shorten down to this when props cannot move clear of it
+// Close-up judge: robe shown between the collar and the desk top = robeToHeadRatio x head height; hands hidden except while striking
+const JUDGE_CLOSEUP_SEATED = { robeToHeadRatio: 0.5, hideHands: true };
+const JUDGE_SEATED_ROWS = { head: 8, collarEnd: 11 }; // seated sprite: head rows 0..7, robe below the collar from row 11
 // ----- Fix v7: juror block raised so the gold valance over the entrance door (bg-top) shows below the front bench.
 // Replaces JUROR_SHIFT_Y_PCT_V6 while on; false = the v6 position -----
 const JUROR_RAISE_V7 = true;
@@ -1193,6 +1219,14 @@ const AVATAR_LAYERS = {
     props: ['', '.....K......', '', '', '', '....O.......', '', '', '', '', '........B...', '.......B....'], // hair clip, pearl, brooch, button
   } },
 };
+// Judge side view (v10 walking), facing right: silver bob to the jaw/shoulder, round glasses (temple + rim), collar at the shoulder, pin
+AVATAR_LAYERS.judge.side = {
+  body: ['', '', '......sss...', '.......sEs..', '......sssss.', '......ssss..', '......sss...', '......ss....',
+         '....RRWR....', '...RRRRRR...', '...RRRRRR...', '...RRRRRR...', '...RRRRRs...', '...RRRRRR...'],
+  hair: ['....HHHH....', '...HHHHHHH..', '..HHHHHH....', '..HHHH......', '..HHHH......', '..HHHH......', '..hHHH......', '...hh.......'],
+  glasses: ['', '', '', '......g..g..'],
+  props: ['', '', '', '', '', '', '', '', '', '', '........P...'],
+};
 function avatarRows(layers, n) {
   const rows = Array.from({ length: n }, () => [...'............']);
   AVATAR_LAYER_ORDER.forEach(k => (layers[k] ?? []).forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== '.' && rows[y]) rows[y][x] = ch; })));
@@ -1214,7 +1248,7 @@ function spriteSVG(view, pal, mirror, role) {
   // legA standing, legB walk frame 2, legS side sitting (thighs forward); seated: forearms + hands instead of legs
   const { y: ay, handX } = CLOSEUP_ARMS;
   body += view === 'seated'
-    ? r(0, ay, 12, 1, colors.c) + handX.map((hx, i) => r(hx, ay, 2, 2, colors.s, i ? '' : 'rhand')).join('')
+    ? r(0, ay, 12, 1, colors.c, 'arms') + r(0, ay, 6, 1, colors.c, 'rarm') + handX.map((hx, i) => r(hx, ay, 2, 2, colors.s, i ? 'lhand' : 'rhand')).join('')
     : view === 'side'
     ? r(4, 14, 2, 2, p, 'legA') + r(3, 14, 1, 2, p, 'legB') + r(6, 14, 1, 2, p, 'legB') + r(6, 13, 3, 1, p, 'legS') + r(8, 14, 1, 2, p, 'legS')
       + r(5, 13, 2, 2, p, 'legK') + r(1, 14, 4, 1, p, 'legK') + r(9, 12, 2, 2, colors.s, 'fist') // kneeling: thigh down, shin back on the floor
@@ -1222,7 +1256,7 @@ function spriteSVG(view, pal, mirror, role) {
     : r(2, 15, 3, 1, p, 'legA') + r(7, 15, 3, 1, p, 'legA') + r(3, 15, 2, 1, p, 'legB') + r(8, 15, 2, 1, p, 'legB');
   const m = MOUTH[view];
   if (m) body += r(m[0], m[1], 2, 1, '#7a3b2e', 'closed') + r(m[0], m[1], 2, 2, '#4a1010', 'open');
-  return `<svg viewBox="0 0 12 ${view === 'seated' ? ay + 2 : 16}">${mirror ? `<g transform="matrix(-1 0 0 1 12 0)">${body}</g>` : body}</svg>`;
+  return `<svg viewBox="0 0 12 ${view === 'seated' ? (SEATED_FIX_V9 && !JUDGE_USE_PORTRAIT ? Math.max(ay + 2, SPRITES.seated.length) : ay + 2) : 16}">${mirror ? `<g transform="matrix(-1 0 0 1 12 0)">${body}</g>` : body}</svg>`;
 }
 
 function makeAvatar(a, view = a.color ? 'back' : a.id === 'judge' ? 'front' : 'side') {
@@ -1543,32 +1577,53 @@ function deskSVG2(W, H, mirror, role, box) {
   // Props keep the old size (DESK's top) and sit at v2 centers on the new top
   const ow = DESK.widthPct * FURNITURE_REF_WIDTH_PX / 100 - DESK.sideDepthPx, oh = DESK.lengthPct * FURNITURE_REF_WIDTH_PX / 100 / ASPECT_RATIO - DESK.frontHeightPx;
   const x0 = mirror ? s : 0; // the top's left edge, screen-local
-  const props = PROPS_ENABLED ? (DESK_PROPS[role] ?? []).map(it => {
-    const [u, v] = FIX4 ? it.v4 : BALANCE_FIX ? it.v3 : it.v2, w = it.w / 100 * ow, h = it.h / 100 * oh;
-    let cx = x0 + u / 100 * tw, cy = v / 100 * th;
-    if (BALANCE_FIX) { // whole prop (rotated box + sheet jitter / laptop lid) at least PROPS_INSET inside the top
-      const r = (it.rot ?? 0) * Math.PI / 180, c = Math.abs(Math.cos(r)), sn = Math.abs(Math.sin(r));
-      const pad = PROPS_INSET + (it.type === 'pile' ? 3 : it.type === 'laptop' ? LAPTOP.lidPx : 0);
-      const hx = (w * c + h * sn) / 2 + pad, hy = (w * sn + h * c) / 2 + pad, drop = it.type === 'pile' ? (it.sheets - 1) * PILE_LAYER_PX : 0;
-      cx = Math.min(Math.max(cx, x0 + hx), x0 + tw - hx);
-      cy = Math.min(Math.max(cy, hy), th - hy - drop);
-    }
-    return propSVG(it, w, h, ...persp([cx, cy]));
-  }).join('') : '';
+  const np = NAMEPLATES.find(n => n.scene === 'court' && n.role === role);
+  const thick = np.h * FURNITURE_REF_WIDTH_PX / 100, ins = PROPS_INSET, edge9 = FIX4 && SEATED_FIX_V9 && NAMEPLATE_SIDE_EDGE === 'away_from_avatar';
+  let plen = np.w * FURNITURE_REF_WIDTH_PX / 100;
+  // v3/v4 nameplate spot (from the outer edge / along the top); v9: center-facing edge, length middle
+  const across = edge9 ? tw - NAMEPLATE_EDGE_INSET_PX - thick / 2 : FIX4 ? NAMEPLATE_V4.acrossPct / 100 * tw : tw - ins - thick / 2;
+  const cx = Math.min(Math.max(mirror ? x0 + tw - across : x0 + across, x0 + Math.min(ins, NAMEPLATE_EDGE_INSET_PX) + thick / 2),
+                      x0 + tw - Math.min(ins, NAMEPLATE_EDGE_INSET_PX) - thick / 2);
+  const cyFor = l => edge9 ? th / 2 : FIX4 ? th - ins - l / 2 : Math.min(Math.max(NAMEPLATE_V3.alongPct / 100 * th, ins + l / 2), th - ins - l / 2);
+  // Props; with the v9 plate, any that overlap it move toward the seat (sizes unchanged). Returns the svg and how many still overlap
+  const layoutProps = l => {
+    const pr = { x0: cx - thick / 2 - 1, x1: cx + thick / 2 + 1, y0: cyFor(l) - l / 2, y1: cyFor(l) + l / 2 + (FIX4 ? NAMEPLATE_V4.standPx : 0) };
+    let hits = 0;
+    const svg = (DESK_PROPS[role] ?? []).map(it => {
+      const [u, v] = FIX4 ? it.v4 : BALANCE_FIX ? it.v3 : it.v2, w = it.w / 100 * ow, h = it.h / 100 * oh;
+      let cx = x0 + u / 100 * tw, cy = v / 100 * th;
+      if (BALANCE_FIX) { // whole prop (rotated box + sheet jitter / laptop lid) at least PROPS_INSET inside the top
+        const r = (it.rot ?? 0) * Math.PI / 180, c = Math.abs(Math.cos(r)), sn = Math.abs(Math.sin(r));
+        const pad = PROPS_INSET + (it.type === 'pile' ? 3 : it.type === 'laptop' ? LAPTOP.lidPx : 0);
+        const hx = (w * c + h * sn) / 2 + pad, hy = (w * sn + h * c) / 2 + pad, drop = it.type === 'pile' ? (it.sheets - 1) * PILE_LAYER_PX : 0;
+        const clampX = () => cx = Math.min(Math.max(cx, x0 + hx), x0 + tw - hx);
+        clampX();
+        cy = Math.min(Math.max(cy, hy), th - hy - drop);
+        if (edge9) {
+          const ex = hx - PROPS_INSET, over = () => cx + ex > pr.x0 && cx - ex < pr.x1 && cy + hy - PROPS_INSET + drop > pr.y0 && cy - hy + PROPS_INSET < pr.y1;
+          if (over()) { cx = mirror ? pr.x1 + ex + 2 : pr.x0 - ex - 2; clampX(); if (over()) hits++; }
+        }
+      }
+      return propSVG(it, w, h, ...persp([cx, cy]));
+    }).join('');
+    return { svg, hits };
+  };
+  let laid = layoutProps(plen);
+  // Still overlapping: shorten the plate, in 5% steps, down to NAMEPLATE_MIN_LENGTH_SCALE
+  for (let k = .95; edge9 && laid.hits && k >= NAMEPLATE_MIN_LENGTH_SCALE - 1e-9; k -= .05) laid = layoutProps(plen = np.w * FURNITURE_REF_WIDTH_PX / 100 * k);
+  if (edge9 && plen < np.w * FURNITURE_REF_WIDTH_PX / 100) np.w = plen * 100 / FURNITURE_REF_WIDTH_PX;
+  if (laid.hits) dbg('nameplate still overlaps', laid.hits, 'prop(s) on', role);
+  const props = PROPS_ENABLED ? laid.svg : '';
   let stand = '';
   if (BALANCE_FIX) { // v3: nameplate on the top's inner side, tilted like the desk's long edges; v4: standing at the front end, upright
-    const np = NAMEPLATES.find(n => n.scene === 'court' && n.role === role), P = FURNITURE_PERSPECTIVE;
-    const thick = np.h * FURNITURE_REF_WIDTH_PX / 100, len = np.w * FURNITURE_REF_WIDTH_PX / 100, ins = PROPS_INSET;
-    const across = FIX4 ? NAMEPLATE_V4.acrossPct / 100 * tw : tw - ins - thick / 2; // from the outer edge
-    const cx = Math.min(Math.max(mirror ? x0 + tw - across : x0 + across, x0 + ins + thick / 2), x0 + tw - ins - thick / 2);
-    const cy = FIX4 ? th - ins - len / 2 : Math.min(Math.max(NAMEPLATE_V3.alongPct / 100 * th, ins + len / 2), th - ins - len / 2);
+    const P = FURNITURE_PERSPECTIVE, cy = cyFor(plen);
     const [lx, ly] = persp([cx, cy]);
     np.x = box.x + lx * kx;
     np.y = box.y + ly * ky;
     if (FIX4) { // small dark base peeking out below the plate (toward the camera), with its floor shadow
       const sp = NAMEPLATE_V4.standPx;
-      stand = fRect('shadow', lx - thick / 2 + PROP_SHADOW.dx, ly - len / 2 + sp + PROP_SHADOW.dy, thick, len)
-            + fRect('frontDark', lx - thick / 2 - 1, ly - len / 2 + sp, thick + 2, len);
+      stand = fRect('shadow', lx - thick / 2 + PROP_SHADOW.dx, ly - plen / 2 + sp + PROP_SHADOW.dy, thick, plen)
+            + fRect('frontDark', lx - thick / 2 - 1, ly - plen / 2 + sp, thick + 2, plen);
     } else {
       const slope = (np.x - P.vanishXPct) * P.strength / (yBot - P.vanishYPct); // dX/dY (% / %) along the long edges
       NAMEPLATE_ROTATION[role] += Math.atan(-slope * ASPECT_RATIO) * 180 / Math.PI;
@@ -1772,12 +1827,20 @@ document.fonts.ready.then(layoutStand);
 addEventListener('resize', layoutStand);
 // Where an advocate steps out to (speaking, losing): the v5 spot, or STAND_OFFSET / kneelOffset toward the center
 const forthSpot = (id, offset) => STAND_FIX_V5 && standPos[id] ? standPos[id] : { x: seatOf(id).x + offset * STAND_DIR[id], y: seatOf(id).y };
+// v9: forearm row moved up to rest on the desk line; rows below it stay behind the desk clip
+const SEATED_V9 = SEATED_FIX_V9 && !JUDGE_USE_PORTRAIT;
+if (SEATED_V9) CLOSEUP_ARMS.y = Math.round(JUDGE_SEATED_ROWS.collarEnd + JUDGE_CLOSEUP_SEATED.robeToHeadRatio * JUDGE_SEATED_ROWS.head) - 2;
 const closeJudge = makeAvatar(AVATARS[0], 'seated');
 closeup.appendChild(closeJudge);
 // marginTop 0: top is the head top, not the feet (the seated sprite is taller than 4:3)
 Object.assign(closeJudge.style, { left: CLOSEUP_JUDGE.x + '%', top: CLOSEUP_JUDGE.headTop + '%', marginTop: '0' });
 closeJudge.style.setProperty('--w', 4 * CLOSEUP_JUDGE.scale + 'cqw');
 closeJudge.firstChild.style.zIndex = 31; // above the desk clip layer (30) so the hands on the desk edge stay visible
+if (SEATED_V9) { // sprite top so the forearm row ends on the desk top; the desk clip (30) covers the robe below it
+  closeJudge.style.top = CLOSEUP_DESK_CLIP.y - (CLOSEUP_ARMS.y + 2) * 4 * CLOSEUP_JUDGE.scale / 12 * ASPECT_RATIO + '%';
+  closeJudge.firstChild.style.zIndex = 29;
+  closeup.classList.toggle('hide-hands', JUDGE_CLOSEUP_SEATED.hideHands);
+}
 const judgePortrait = Object.assign(document.createElement('img'), { id: 'judgePortrait', className: 'portrait', alt: '', hidden: true });
 closeup.appendChild(judgePortrait);
 const [cutPortrait, cutHand] = cutinEl.querySelectorAll('.portrait');
@@ -1899,9 +1962,54 @@ function place(el, p) {
   el.style.left = p.x + '%';
   el.style.top = p.y + '%';
 }
+// v10 facing: side sprites face +1 right / -1 left; the defender's is drawn facing left. Jurors (back view) never turn
+const FACING = WALK_FIX_V10 && WALK_FACING_MODE === 'by_movement';
+const BASE_FACING = { prosecutor: 1, defender: -1, judge: 1 };
+const faceOf = el => el.classList.contains('turn') ? -BASE_FACING[el.dataset.id] : BASE_FACING[el.dataset.id];
+async function turnTo(el, dir, g) {
+  if (faceOf(el) === dir) return;
+  el.classList.toggle('turn', dir !== BASE_FACING[el.dataset.id]);
+  await wait(WALK_TURN_MS);
+  return g === gen;
+}
+// Judge sprite view swap (front at the bench, side while walking); keeps the sprite's layer
+function setJudgeView(view) {
+  const svg = els.judge.querySelector('svg');
+  if ((svg.dataset.view ?? 'front') === view) return;
+  const box = tag('div');
+  box.innerHTML = spriteSVG(view, PALETTES.judge, false, 'judge');
+  box.firstChild.style.zIndex = svg.style.zIndex;
+  box.firstChild.dataset.view = view;
+  svg.replaceWith(box.firstChild);
+  if (view === 'front') els.judge.classList.remove('turn');
+}
+// Seated advocates / the judge back to their seat facing (after arriving), WALK_TURN_MS
+async function faceSeat(id, g) {
+  if (!FACING) return;
+  if (id === 'judge') { await wait(WALK_TURN_MS); if (g === gen) setJudgeView('front'); return; }
+  if (BASE_FACING[id]) await turnTo(els[id], BASE_FACING[id], g);
+}
+function doorAnim(door) {
+  if (!DOOR_ANIM_ENABLED) return;
+  const d = Object.assign(tag('div'), { className: 'door-anim fx' });
+  Object.assign(d.style, { left: door.x + '%', top: door.y + '%', width: DOOR_ANIM.wPct + '%', height: DOOR_ANIM.hPct + '%', background: DOOR_ANIM.color });
+  court.append(d);
+  d.animate([{ scale: '1 1', opacity: 1 }, { scale: '0 1', opacity: 0 }], { duration: DOOR_ANIM.ms, fill: 'forwards' });
+  setTimeout(() => d.remove(), DOOR_ANIM.ms);
+}
+const judgeDoor = which => { const d = which === 'right' ? JUDGE_DOOR_RIGHT : JUDGE_DOOR_LEFT; return { x: d.xPct, y: d.yPct }; };
 async function walk(el, p, g) {
   const ms = Math.hypot(p.x - parseFloat(el.style.left), p.y - parseFloat(el.style.top)) / WALK_SPEED * 1000;
   el.classList.remove('out', 'sit');
+  if (FACING && BASE_FACING[el.dataset.id]) { // stand, turn toward the move (if it is sideways enough), then walk
+    const dx = (p.x - parseFloat(el.style.left)) * court.clientWidth, dy = (p.y - parseFloat(el.style.top)) * court.clientHeight;
+    if (Math.abs(dx) > WALK_TURN_MIN_RATIO * Math.abs(dy)) {
+      const swap = el === els.judge && el.querySelector('svg').dataset.view !== 'side', turn = faceOf(el) !== Math.sign(dx);
+      if (swap) setJudgeView('side');
+      if (turn) el.classList.toggle('turn', Math.sign(dx) !== BASE_FACING[el.dataset.id]);
+      if (swap || turn) { await wait(WALK_TURN_MS); if (g !== gen) return; }
+    }
+  }
   el.classList.add('walking');
   el.offsetWidth; // start the transition after the position is applied
   el.style.transitionDuration = `${ms}ms, ${ms}ms, 300ms`;
@@ -1932,8 +2040,10 @@ async function stepForth(id, g) {
 async function returnSeat(id, g) {
   const el = els[id];
   if (!el.classList.contains('forth')) return;
-  el.classList.add('turn');
+  if (!FACING) el.classList.add('turn');
   await walk(el, seatOf(id), g);
+  if (g !== gen) return;
+  await faceSeat(id, g);
   if (g !== gen) return;
   el.classList.remove('turn', 'forth');
   sit([id], true);
@@ -1992,6 +2102,7 @@ function setGavelUp(up, ms) {
 }
 async function gavelStrikes(times, g, onHit) {
   const block = gavelEl.firstChild;
+  closeJudge.classList.add('striking'); // v9 hideHands: the gavel hand shows only during the strikes
   for (let i = 0; i < times; i++) {
     if (g !== gen) return;
     setGavelUp(true, GAVEL.raiseMs);
@@ -2013,6 +2124,7 @@ async function gavelStrikes(times, g, onHit) {
     onHit?.(i);
     await wait(GAVEL.gapMs - GAVEL.raiseMs - GAVEL.strikeMs);
   }
+  if (g === gen) closeJudge.classList.remove('striking');
 }
 
 function addMsg(cls, ...children) {
@@ -2721,14 +2833,24 @@ const STAGES = [
       await wait(i * ENTRY_GAP_MS);
       if (g !== gen) return;
       await walk(els[id], seatOf(id), g);
+      if (g === gen) await faceSeat(id, g);
       if (g === gen) sit([id], true);
     }));
     if (g === gen) caption('배심원단과 양측이 모두 입장했습니다');
   } },
   { name: '재판장 입장', run: async g => {
     sit(OTHERS, false);
-    place(els.judge, JUDGE_DOOR);
+    const door = WALK_FIX_V10 ? judgeDoor(JUDGE_ENTER_DOOR) : JUDGE_DOOR;
+    place(els.judge, door);
+    if (WALK_FIX_V10) { // appear at the door (fade), walk side-on along the bench row, turn to the front at the chair
+      setJudgeView('side');
+      els.judge.classList.remove('out');
+      doorAnim(door);
+      await finished(els.judge.animate([{ opacity: 0 }, { opacity: 1 }], { duration: JUDGE_DOOR_FADE_MS }));
+      if (g !== gen) return;
+    }
     await walk(els.judge, AVATARS[0], g);
+    if (g === gen) await faceSeat('judge', g);
   } },
   { name: '', run: async g => { // TTS + bubble icon + mouth, no subtitle/chat
     sit(['judge'], true);
@@ -2860,8 +2982,14 @@ const STAGES = [
     sit(['judge', ...OTHERS], false);
     await wait(600);
     if (g !== gen) return;
-    await walk(els.judge, JUDGE_DOOR, g);
+    const door = WALK_FIX_V10 ? judgeDoor(JUDGE_EXIT_DOOR) : JUDGE_DOOR;
+    await walk(els.judge, door, g);
     if (g !== gen) return;
+    if (WALK_FIX_V10) { // fade out at the door
+      doorAnim(door);
+      await finished(els.judge.animate([{ opacity: 1 }, { opacity: 0 }], { duration: JUDGE_DOOR_FADE_MS, fill: 'forwards' }));
+      if (g !== gen) return;
+    }
     els.judge.classList.add('out');
   } },
   { name: '', waitsForInput: TRAILER_ENABLED && TRAILER_POPUP_ENABLED, run: async g => { // 13 outro (last stage): trailer popup, trailer, or the next trial card
@@ -2921,7 +3049,8 @@ function buildState(i) {
     el.className = `avatar ${el.dataset.view}` + (inside ? '' : ' out') + (seated ? ' sit' : '');
     el.getAnimations({ subtree: true }).forEach(an => an instanceof CSSAnimation || an.cancel()); // reaction motion
     el.style.zIndex = '';
-    place(el, inside ? a : judge ? JUDGE_DOOR : DOOR);
+    place(el, inside ? a : judge ? (WALK_FIX_V10 ? judgeDoor(i >= 13 ? JUDGE_EXIT_DOOR : JUDGE_ENTER_DOOR) : JUDGE_DOOR) : DOOR);
+    if (judge && WALK_FIX_V10) setJudgeView('front');
   });
   document.querySelectorAll('.react, .fx').forEach(el => el.remove());
   hideCutin();
