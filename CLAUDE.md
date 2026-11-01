@@ -27,12 +27,12 @@ Demo of the "Love Trial" feature (side content for a dating app), seen from one 
 0 role select (logo intro) -> 1 entry -> 2 judge enters -> 3 opening -> 4 case intro -> 5 opening statements -> 6 issue arguments -> 7 closing -> 8 jury discussion (chat) -> 9 chat filter demo -> 10 verdict vote -> 11 verdict reading (close-up) -> 12 reactions + adjournment -> 13 outro (trailer popup / trailer)
 
 ## Systems and switches
-- Dialogue box, trial log (CHAT_READABILITY_V2, CHAT_PADDING_V22), gauge (PIXEL_UI_V29 restyle).
+- Dialogue box, trial log (CHAT_READABILITY_V2, CHAT_PADDING_V22, CHAT_INPUT_PAD_V32), gauge (PIXEL_UI_V29 restyle, GAUGE_SCALE_V30).
 - Cut-ins with portraits: CUTIN_PLACEMENT_V20, CUTIN_SOUND_ENABLED. Speaking order: SPEECH_ORDER_V24.
 - Furniture/layout: FURNITURE_FIX_V2, BALANCE_FIX_V3, FURNITURE_FIX_V4, STAND_FIX_V5, LAYOUT_FIX_V6, JUROR_RAISE_V7, SEATED_FIX_V9, WALK_FIX_V10, JUDGE_TOPVIEW_V18, PROPS_ENABLED, DOOR_ANIM_ENABLED.
 - Nameplates: NAMEPLATE_FIT_V11, NAMEPLATE_SIZE_V12/V13/V15, NAMEPLATE_ADJUST_V21.
-- Pixel avatars: AVATAR_V2 (AVATAR_PALETTE, AVATAR_LAYERS). Pixel font: PIXEL_FONT_V28.
-- Role card: ROLE_CARD_V25, ROLE_OPEN_V26, ROLE_CARD_V27. Logo: LOGO_INTRO_ENABLED.
+- Pixel avatars: AVATAR_V2 (AVATAR_PALETTE, AVATAR_LAYERS). Pixel font: PIXEL_FONT_V28, PIXEL_WEIGHT_V31.
+- Role card: ROLE_CARD_V25, ROLE_OPEN_V26, ROLE_CARD_V27, ROLE_NAME_V30. Logo: LOGO_INTRO_ENABLED.
 - Trailer: TRAILER_ENABLED, TRAILER_POPUP_ENABLED, TRAILER_AVATAR_V23. Gavel: GAVEL_ENABLED.
 - Speaker shots (virtual camera): not built.
 

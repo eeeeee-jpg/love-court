@@ -459,6 +459,7 @@
   /* PIXEL_UI_V29 */
   #roleOverlay.pf29 .card button.role-row.picked { transform: none; filter: brightness(1.12); } /* no fractional scale on text */
   .pf29 :is(h1, b, small, span, p) { font-weight: var(--pf-w, 700); } /* --pf-w: PIXEL_TEXT_WEIGHT (v31) */
+  #roleOverlay.pf29 .card :is(h1, button b) { font-weight: var(--pf-w, 700); } /* beats the v25 'font: 700' shorthands */
   .pf29 :is(b, small, span, p):not(.frame-tab b) { text-shadow: var(--fb) 0 0 currentColor; }
   #roleOverlay.pf29 .card button.role-row.hl :is(b, small) { text-shadow: var(--fb) 0 0 currentColor, 0 1px 0 rgba(0,0,0,.55), var(--fb) 1px 0 rgba(0,0,0,.55); }
   #roleOverlay.pf29.pf-solid .card h1 { background: none; color: var(--gold-base); filter: none;
