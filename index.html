@@ -94,6 +94,7 @@
                transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
                background: linear-gradient(var(--gold-dark), var(--gold-light) 50%, var(--gold-dark));
                box-shadow: 0 .05em .15em rgba(0,0,0,.6); }
+  .nameplate.wall { box-shadow: 0 .14em .18em rgba(0,0,0,.55); } /* v18: mounted on the bench front, shadow just below */
   .nameplate b { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; background: #111;
                  border: .06em solid var(--gold-base); box-shadow: inset 0 0 0 .08em #111, inset 0 0 0 .13em var(--gold-dark);
                  font: 700 1em "Noto Serif KR", "Batang", "AppleMyungjo", serif; letter-spacing: .2em; white-space: nowrap; }
@@ -106,6 +107,11 @@
   .nameplate.ornate b::before, .nameplate.ornate b::after { content: ''; position: absolute; top: 50%; width: .55em; height: .55em;
     border: .07em solid; border-color: var(--gold-base) transparent transparent var(--gold-base); border-radius: 50%; }
   .nameplate.ornate b::before { left: .35em; transform: translateY(-50%) rotate(-45deg); }
+  /* v15: ink box centered in the inner area (--tx/--ty from canvas text metrics) */
+  .nameplate.v15 span { translate: var(--tx, 0) var(--ty, 0); }
+  .nameplate.dbg-pad b { outline: 1px solid rgba(0,255,255,.7); outline-offset: calc(var(--inner-off) * -1); }
+  .nameplate.dbg-pad i.ink { position: absolute; outline: 1px solid rgba(255,0,255,.8); pointer-events: none; }
+  .nameplate.ornate.v13 b::before { left: .1em; } .nameplate.ornate.v13 b::after { right: .1em; } /* NAMEPLATE_ORNAMENT_EM.gap: curls at the ends, outside the text padding */
   .nameplate.ornate b::after { right: .35em; transform: translateY(-50%) rotate(135deg); }
   /* LAYOUT_FIX_V6 judge plate: stands on the desk top on a small dark-oak base with a short floor shadow */
   .nameplate.stand::before { content: ''; position: absolute; z-index: -1; left: -8%; right: -8%; top: 82%; height: 34%;
@@ -710,6 +716,14 @@ const ISSUE_DEBATE = [
     { id: 'prosecutor', text: '열두 시간 동안 소식이 없다면 누구라도 걱정합니다. 걱정은 구속이 아니라 애정의 표현입니다.', cutin: '걱정은 구속이 아닙니다!' },
   ] },
 ];
+// Cut-in shouts per speech (CUTIN_PLACEMENT_V20): '<part>.<side>', part = opening | issue1 | issue2 | closing.
+// Only speeches picked by CUTIN_SPEECH_INDEXES use them; a picked speech without a shout gets no cut-in (console warning)
+const CUTIN_SHOUTS = {
+  'opening.prosecutor': '이건 배려의 문제입니다!', 'opening.defender': '고의는 없었습니다!',  // placeholder
+  'issue1.prosecutor':  '한 줄이면 충분했습니다!', 'issue1.defender':  '예측은 불가능합니다!', // placeholder
+  'issue2.defender':    '일곱 통은 압박입니다!',   'issue2.prosecutor': '걱정은 구속이 아닙니다!',
+  'closing.prosecutor': '시작은 한마디였습니다!',  'closing.defender': '사고는 잘못이 아닙니다!', // placeholder
+};
 // Verdict stamp, slammed on the 3rd gavel strike
 const VERDICT_STAMPS = { notGuilty: '무죄!', protestJustified: '항의 정당!' };
 // Juror mood gauge (stages 6~9): the speaker's side goes up by delta when the line finishes typing (GAUGE_MODE decides the other side).
@@ -782,6 +796,43 @@ const JUDGE_AVATAR_RAISE_PCT = 3;        // judge sprite up (% of stage height):
 const JUDGE_DESK_CLIP_V6 = { x: 43, y: 20.9, w: 14, h: 7.1 }; // desk part redrawn over the judge: front edge down (bg-top)
 const JUDGE_NAMEPLATE = { xPct: 50, yPct: 21.2, widthPct: 6, fontCqw: 8 / 4.5 * 0.5 }; // on the desk top's front edge; 75% wide, old text size
 const JUDGE_LABEL_V6 = { scale: 0.85, placement: 'side', topPct: 18, gapPx: 6 }; // 'side' = right of the head | 'above'
+// ----- Fix v18 (top view only): judge plate on the bench's front panel; judge shown down to the shoulders; lighter glasses.
+// Close-up judge, plate and gavel unchanged. false = before -----
+const JUDGE_TOPVIEW_V18 = true;
+const JUDGE_SEAT_TOPVIEW_ONLY = true;    // (the close-up keeps SEATED_FIX_V9)
+// Front panel of the judge's bench in bg-top (% of the image): raised center panel between the dark lines at y 22.5 and 25.6
+const JUDGE_FRONT_PANEL = { x0: 46, x1: 54, y0: 22.56, y1: 25.6 };
+const JUDGE_NAMEPLATE_TOPVIEW = { xPct: 50, yAnchor: 'front_panel_center', minScale: 1.3 }; // shrinks (not below minScale) to fit the panel
+const JUDGE_TOPVIEW_REVEAL = 'shoulders'; // desk overlap line just below the shoulders/collar
+const JUDGE_TOPVIEW_REVEAL_RATIO = 0.45;  // robe shown below the head = this x head height (head = sprite rows 0..7)
+const JUDGE_GLASSES_V18 = '#8A7F78';      // top-view judge rims: lighter than the eye dots
+// ----- Fix v15: plate padding from the text's ink box (H = ink height, W = ink width): vertical 0.20 H and horizontal 0.40 H
+// to the innermost gold line, ink centered. Replaces the v13 padding (NAMEPLATE_SCALE kept). false = v13 -----
+const NAMEPLATE_SIZE_V15 = true;
+const NAMEPLATE_PADDING = { vertical: 0.20, horizontal: 0.40 }; // x H, each side
+const NAMEPLATE_FRAME_INNER_EM = { base: 0.18, border: 0.06, line: 0.13 }; // gold base, gold border, inner shadow lines (.nameplate b)
+const NAMEPLATE_MAX_EDGE_PCT_V15 = 85;
+const DEBUG_NAMEPLATE_PADDING = false;  // true: outline the inner area and the ink box on every plate
+// ----- Fix v13: all nameplates (judge top view + close-up, prosecutor, defender) 1.6x larger with one padding rule:
+// thickness = text + 2 x padding, length = text width + 2 x padding (+ end ornaments outside the padding). Replaces v12 sizes.
+// false = v12 -----
+const NAMEPLATE_SIZE_V13 = true;
+const NAMEPLATE_SCALE = 1.6;            // text size x this; frame, ornaments, base and shadows are em/%-based and follow
+const NAMEPLATE_PADDING_RATIO = 0.20;   // padding on every side = text size x this, inside the gold frame
+const NAMEPLATE_FRAME_EM = 0.24;        // gold frame per side (.nameplate padding .18em + b border .06em), added outside the padding
+const NAMEPLATE_ORNAMENT_EM = { width: 0.55, gap: 0.1 }; // close-up end curls: width + gap to the plate end, outside the padding
+const NAMEPLATE_MAX_EDGE_PCT = 80;      // advocate plate longer than this share of its desk edge: that plate's scale shrinks to fit
+const NAMEPLATE_PROP_PUSH_MAX_PX_V13 = 12;
+const JUDGE_PLATE_MAX_SHIFT_PX = 3;     // top-view judge plate moves toward the desk front at most this to clear the collar
+// ----- Fix v12: advocate plates sized to their text with the judge plate's proportions (replaces the 62% length rule while on).
+// 'auto' = measured from the top-view judge plate; out-of-range measurements fall back to the defaults. false = v11 sizes -----
+const NAMEPLATE_SIZE_V12 = true;
+const NAMEPLATE_PAD_RATIO = 'auto';          // (plate length - text width) / plate thickness; default 1.1, used if outside 0.8~1.8
+const NAMEPLATE_PAD_RATIO_DEFAULT = 1.1;
+const NAMEPLATE_PAD_RATIO_RANGE = [0.8, 1.8];
+const NAMEPLATE_TEXT_TO_THICKNESS = 'auto';  // text size / plate thickness; default 0.55
+const NAMEPLATE_TEXT_TO_THICKNESS_DEFAULT = 0.55;
+const NAMEPLATE_LETTER_SPACING_EM = 0.2;     // same as .nameplate b (all plates)
 // ----- Fix v11: advocate nameplate fitted to the desk top's center-facing edge (the perspective trapezoid side): parallel to it,
 // its outer long side NAMEPLATE_EDGE_INSET_PX inside the edge. false = v9 (upright, bounding-box placement) -----
 const NAMEPLATE_FIT_V11 = true;
@@ -972,6 +1023,10 @@ const GAUGE_MODE = 'zero_sum'; // 'zero_sum' = the other side drops by delta (su
 // Cut-in before a shouted line + verdict stamp. Times in ms; band/burst/stamp sizes in % of container height / cqw
 const CUTIN_SOUND_ENABLED = true;
 // Line timing (stages 5~7). Cut-in: entrance, then it stays through the line and leaves after the hold
+// Cut-ins by speech order (v20): each side's speeches in stages 5~7 are numbered from 1; only these numbers get a cut-in.
+// false = the cutin fields on ISSUE_DEBATE lines (before)
+const CUTIN_PLACEMENT_V20 = true;
+const CUTIN_SPEECH_INDEXES = [2, 3];
 const CUTIN_INTRO_MS = 1100;
 const CUTIN_HOLD_AFTER_LINE_MS = 1500;
 const CUTIN_HOLD_MODE = 'auto';        // 'auto' | 'manual' (▶ / → after the line to continue)
@@ -1243,7 +1298,8 @@ function avatarRows(layers, n) {
 function spriteSVG(view, pal, mirror, role) {
   const v2 = AVATAR_V2 && AVATAR_LAYERS[role]?.[view], P = AVATAR_PALETTE[role];
   const colors = v2 ? { s: P.skin, E: P.eye, p: P.legs, c: P.robe ?? P.suit ?? P.jacket,
-                        ...Object.fromEntries(Object.entries(AVATAR_LEGEND[role]).map(([ch, key]) => [ch, P[key]])) }
+                        ...Object.fromEntries(Object.entries(AVATAR_LEGEND[role]).map(([ch, key]) => [ch, P[key]])),
+                        ...(JUDGE_TOPVIEW_V18 && role === 'judge' && view !== 'seated' ? { g: JUDGE_GLASSES_V18 } : {}) }
                     : { h: '#3b2a20', s: '#f1c9a0', E: '#222', p: '#444a55', ...pal };
   const r = (x, y, w, h, fill, cls = '') => `<rect class="${cls}" x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"/>`;
   let body = '';
@@ -1540,6 +1596,86 @@ if (FIX6) {
   Object.assign(NAMEPLATES.find(n => n.scene === 'court' && n.role === 'judge'),
                 { x: JUDGE_NAMEPLATE.xPct, y: JUDGE_NAMEPLATE.yPct, w: JUDGE_NAMEPLATE.widthPct, font: JUDGE_NAMEPLATE.fontCqw, stand: true });
 }
+// v12: plate thickness = text size / NAMEPLATE_TEXT_TO_THICKNESS, length = text width + thickness x NAMEPLATE_PAD_RATIO,
+// both ratios taken from the judge's top-view plate. Text width from canvas metrics (system fonts, no layout needed)
+const SIZE12 = NAMEPLATE_SIZE_V12 && FIX4 && SEATED_FIX_V9 && NAMEPLATE_FIT_V11;
+let plateRatios = null;
+if (SIZE12) {
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = '700 100px "Noto Serif KR", "Batang", "AppleMyungjo", serif';
+  const textW = (txt, f) => (ctx.measureText(txt).width / 100 + NAMEPLATE_LETTER_SPACING_EM * ([...txt].length - 1)) * f; // cqw
+  const jp = NAMEPLATES.find(n => n.scene === 'court' && n.role === 'judge'), jh = jp.h ?? jp.w / 4.5, jf = jp.font ?? jh * 0.5;
+  const pad = (jp.w - textW(NAMEPLATE_TEXT.judge, jf)) / jh, t2t = jf / jh;
+  const [lo, hi] = NAMEPLATE_PAD_RATIO_RANGE;
+  plateRatios = { measuredPad: pad, measuredT2T: t2t,
+    pad: NAMEPLATE_PAD_RATIO === 'auto' ? (pad >= lo && pad <= hi ? pad : NAMEPLATE_PAD_RATIO_DEFAULT) : NAMEPLATE_PAD_RATIO,
+    t2t: NAMEPLATE_TEXT_TO_THICKNESS === 'auto' ? (t2t > 0.3 && t2t < 1 ? t2t : NAMEPLATE_TEXT_TO_THICKNESS_DEFAULT) : NAMEPLATE_TEXT_TO_THICKNESS };
+  NAMEPLATES.filter(n => n.scene === 'court' && (n.role === 'prosecutor' || n.role === 'defender')).forEach(n => {
+    const f = n.font ?? (n.h ?? n.w / 4.5) * 0.5; // keep the current text size
+    Object.assign(n, { w11: n.w, h11: n.h ?? n.w / 4.5, font: f }); // v11 size: the props stay laid out around it
+    n.h = f / plateRatios.t2t;
+    n.w = textW(NAMEPLATE_TEXT[n.role], f) + n.h * plateRatios.pad;
+  });
+}
+// v13: one size rule for every plate; the advocates' props stay laid out around the larger of the v11 plate and the new one
+const SIZE13 = NAMEPLATE_SIZE_V13;
+const PLATE_INSET13 = NAMEPLATE_EDGE_INSET_PX * NAMEPLATE_SCALE;
+if (SIZE13) {
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = '700 100px "Noto Serif KR", "Batang", "AppleMyungjo", serif';
+  const textW = (txt, f) => (ctx.measureText(txt).width / 100 + NAMEPLATE_LETTER_SPACING_EM * ([...txt].length - 1)) * f;
+  const P = NAMEPLATE_PADDING_RATIO, O = NAMEPLATE_ORNAMENT_EM, u = FURNITURE_REF_WIDTH_PX / 100;
+  NAMEPLATES.forEach(n => {
+    const h0 = n.h ?? n.w / 4.5, f = (n.font ?? h0 * 0.5) * NAMEPLATE_SCALE;
+    const advocate = n.scene === 'court' && (n.role === 'prosecutor' || n.role === 'defender');
+    if (advocate) Object.assign(n, { w11: n.w11 ?? n.w, h11: n.h11 ?? h0 }); // props keep their v11/v12 layout; the new plate only nudges them
+    const fr = 2 * NAMEPLATE_FRAME_EM * f;
+    Object.assign(n, { font: f, h: f * (1 + 2 * P) + fr, w: textW(NAMEPLATE_TEXT[n.role], f) + 2 * P * f + fr + (n.ornament ? 2 * (O.width + O.gap) * f : 0), v13: true });
+  });
+  // Top-view judge plate: nudge toward the desk front (<= JUDGE_PLATE_MAX_SHIFT_PX) if its top edge covers the collar rows
+  const jp = NAMEPLATES.find(n => n.scene === 'court' && n.role === 'judge'), ja = AVATARS.find(a => a.id === 'judge');
+  const rowH = 4 * AVATAR_SCALE * ASPECT_RATIO / 12, collarBottom = ja.y - 12 * rowH + 11 * rowH; // seated: rows 9-10 = collar
+  const plateTop = jp.y - jp.h * ASPECT_RATIO / 2, maxShift = JUDGE_PLATE_MAX_SHIFT_PX * 100 / (court.clientHeight || 1);
+  jp.yBase = jp.y;
+  if (plateTop < collarBottom) jp.y += Math.min(collarBottom - plateTop, maxShift);
+}
+// v15: canvas ink metrics (same font stack, letter-spacing as the plates)
+const plateCtx = document.createElement('canvas').getContext('2d');
+function plateMetrics(txt, f) { // px metrics at font size f
+  plateCtx.font = '700 100px "Noto Serif KR", "Batang", "AppleMyungjo", serif';
+  plateCtx.letterSpacing = NAMEPLATE_LETTER_SPACING_EM * 100 + 'px';
+  const m = plateCtx.measureText(txt), k = f / 100;
+  return { iA: m.actualBoundingBoxAscent * k, iD: m.actualBoundingBoxDescent * k, iL: m.actualBoundingBoxLeft * k, iR: m.actualBoundingBoxRight * k,
+           fA: m.fontBoundingBoxAscent * k, fD: m.fontBoundingBoxDescent * k, adv: m.width * k - NAMEPLATE_LETTER_SPACING_EM * f };
+}
+const plateFrameEm = () => NAMEPLATE_FRAME_INNER_EM.base + NAMEPLATE_FRAME_INNER_EM.border + NAMEPLATE_FRAME_INNER_EM.line;
+const plateOrnEm = n => n.ornament ? NAMEPLATE_ORNAMENT_EM.width + NAMEPLATE_ORNAMENT_EM.gap : 0; // end curls, outside the inner area
+if (NAMEPLATE_SIZE_V15) {
+  const P = NAMEPLATE_PADDING;
+  NAMEPLATES.forEach(n => {
+    const f = n.v13 ? n.font : (n.font ?? (n.h ?? n.w / 4.5) * 0.5) * NAMEPLATE_SCALE; // cqw
+    const m = plateMetrics(NAMEPLATE_TEXT[n.role], f), H = m.iA + m.iD, W = m.iL + m.iR, fr = 2 * (plateFrameEm() + plateOrnEm(n)) * f;
+    // Ink center vs the centered text box: x from the ink's side bearings, y from the content area (font box) centered in the line
+    const dx = m.adv / 2 - (m.iR - m.iL) / 2, dy = (m.fD - m.fA) / 2 + (m.iA - m.iD) / 2;
+    Object.assign(n, { font: f, h: H * (1 + 2 * P.vertical) + 2 * plateFrameEm() * f, w: W + 2 * P.horizontal * H + fr,
+                       shift: [dx / f, dy / f], v15: true });
+  });
+  // Top-view judge plate: re-check the collar from its unshifted spot
+  const jp = NAMEPLATES.find(n => n.scene === 'court' && n.role === 'judge'), ja = AVATARS.find(a => a.id === 'judge');
+  jp.y = jp.yBase ?? jp.y;
+  const rowH = 4 * AVATAR_SCALE * ASPECT_RATIO / 12, collarBottom = ja.y - rowH, plateTop = jp.y - jp.h * ASPECT_RATIO / 2;
+  if (plateTop < collarBottom) jp.y += Math.min(collarBottom - plateTop, JUDGE_PLATE_MAX_SHIFT_PX * 100 / (court.clientHeight || 1));
+}
+// v18: top-view judge plate centered on the bench's front panel; scaled down (>= minScale) if it overflows the panel
+const judgePlateV18 = { scale: NAMEPLATE_SCALE };
+if (JUDGE_TOPVIEW_V18 && FIX6) {
+  const jp = NAMEPLATES.find(n => n.scene === 'court' && n.role === 'judge'), F = JUDGE_FRONT_PANEL, T = JUDGE_NAMEPLATE_TOPVIEW;
+  const h = jp.h ?? jp.w / 4.5, fit = Math.min(1, (F.x1 - F.x0) / jp.w, (F.y1 - F.y0) / (h * ASPECT_RATIO));
+  const k = Math.max(fit, T.minScale / NAMEPLATE_SCALE);
+  if (k < 1) { Object.assign(jp, { w: jp.w * k, h: h * k, font: jp.font * k }); judgePlateV18.scale = NAMEPLATE_SCALE * k; }
+  judgePlateV18.fits = fit >= k - 1e-9;
+  Object.assign(jp, { x: T.xPct, y: (F.y0 + F.y1) / 2, stand: false, wall: true });
+}
 if (FIX4) FURNITURE_PERSPECTIVE.strength = FURNITURE_PERSPECTIVE_STRENGTH_V4;
 const PROPS_INSET = FIX4 ? PROPS_INSET_PX_V4 : PROPS_INSET_PX;
 // Desk faces (ref px) of the active version
@@ -1584,8 +1720,9 @@ function deskSVG2(W, H, mirror, role, box) {
   const ow = DESK.widthPct * FURNITURE_REF_WIDTH_PX / 100 - DESK.sideDepthPx, oh = DESK.lengthPct * FURNITURE_REF_WIDTH_PX / 100 / ASPECT_RATIO - DESK.frontHeightPx;
   const x0 = mirror ? s : 0; // the top's left edge, screen-local
   const np = NAMEPLATES.find(n => n.scene === 'court' && n.role === role);
-  const thick = np.h * FURNITURE_REF_WIDTH_PX / 100, ins = PROPS_INSET, edge9 = FIX4 && SEATED_FIX_V9 && NAMEPLATE_SIDE_EDGE === 'away_from_avatar';
-  let plen = np.w * FURNITURE_REF_WIDTH_PX / 100;
+  // thick/plen: the v11 plate the props are laid out around; v12 only changes the drawn plate (thickNow, final plen)
+  const thick = (np.h11 ?? np.h) * FURNITURE_REF_WIDTH_PX / 100, thickNow = np.h * FURNITURE_REF_WIDTH_PX / 100, ins = PROPS_INSET, edge9 = FIX4 && SEATED_FIX_V9 && NAMEPLATE_SIDE_EDGE === 'away_from_avatar';
+  let plen = (np.w11 ?? np.w) * FURNITURE_REF_WIDTH_PX / 100;
   // v11: center-facing edge of the top (corners after perspective, screen-local px; mirrored = the defender's left edge)
   const FIT11 = NAMEPLATE_FIT_V11 && edge9;
   let fit = null;
@@ -1594,11 +1731,12 @@ function deskSVG2(W, H, mirror, role, box) {
     const u = [(B[0] - A[0]) / L, (B[1] - A[1]) / L];                       // far end -> camera end
     fit = { A, u, L, n: mirror ? [u[1], -u[0]] : [-u[1], u[0]],              // inward normal (into the top)
             deg: Math.atan2(A[0] - B[0], B[1] - A[1]) * 180 / Math.PI };     // tilt from vertical, + = far end leans right
-    plen = Math.min(plen, NAMEPLATE_LENGTH_PCT / 100 * L);
+    if (!SIZE12) plen = Math.min(plen, NAMEPLATE_LENGTH_PCT / 100 * L);
+    else if (plen > NAMEPLATE_LENGTH_PCT / 100 * L && DEBUG_LOG) console.log('[court] nameplate longer than', NAMEPLATE_LENGTH_PCT + '% of the edge:', role);
   }
   const capLen = plen;
   // Plate center: NAMEPLATE_ALONG_PCT along the edge, its outer long side NAMEPLATE_EDGE_INSET_PX inside it
-  const fitCenter = () => { const m = NAMEPLATE_ALONG_PCT / 100 * fit.L, d = NAMEPLATE_EDGE_INSET_PX + thick / 2;
+  const fitCenter = (t = thick, inset = NAMEPLATE_EDGE_INSET_PX) => { const m = NAMEPLATE_ALONG_PCT / 100 * fit.L, d = inset + t / 2;
                             return [fit.A[0] + fit.u[0] * m + fit.n[0] * d, fit.A[1] + fit.u[1] * m + fit.n[1] * d]; };
   const unpersp = ([x, y]) => { // inverse of persp (screen-local -> top-local px)
     const P = FURNITURE_PERSPECTIVE, k = 1 - P.strength * (yBot - (box.y + y * ky)) / (yBot - P.vanishYPct);
@@ -1636,6 +1774,18 @@ function deskSVG2(W, H, mirror, role, box) {
             clampX();
             if (over()) hits++;
           }
+          if (SIZE13 && FIT11) { // v13 plate (deeper inset, own size): push toward the seat by at most NAMEPLATE_PROP_PUSH_MAX_PX_V13
+            const [qx, qy] = unpersp(fitCenter(thickNow, PLATE_INSET13)), ql = np.w * FURNITURE_REF_WIDTH_PX / 100;
+            const qt = ql / 2 * Math.abs(Math.sin(fit.deg * Math.PI / 180));
+            const q = { x0: qx - thickNow / 2 - 1 - qt, x1: qx + thickNow / 2 + 1 + qt, y0: qy - ql / 2, y1: qy + ql / 2 + NAMEPLATE_V4.standPx };
+            const over13 = () => cx + ex > q.x0 && cx - ex < q.x1 && cy + hy - PROPS_INSET + drop > q.y0 && cy - hy + PROPS_INSET < q.y1;
+            if (over13()) {
+              const to = mirror ? q.x1 + ex + 2 : q.x0 - ex - 2, m = NAMEPLATE_PROP_PUSH_MAX_PX_V13;
+              cx += Math.max(-m, Math.min(m, to - cx));
+              clampX();
+              if (over13()) hits++;
+            }
+          }
         }
       }
       return propSVG(it, w, h, ...persp([cx, cy]));
@@ -1644,20 +1794,30 @@ function deskSVG2(W, H, mirror, role, box) {
   };
   let laid = layoutProps(plen);
   // Still overlapping: shorten the plate, in 5% steps, down to NAMEPLATE_MIN_LENGTH_SCALE
-  for (let k = .95; edge9 && laid.hits && k >= NAMEPLATE_MIN_LENGTH_SCALE - 1e-9; k -= .05) laid = layoutProps(plen = capLen * k);
-  if (edge9 && plen < np.w * FURNITURE_REF_WIDTH_PX / 100) np.w = plen * 100 / FURNITURE_REF_WIDTH_PX;
+  // (v13 draws its own text-sized plate, so leftover overlaps are only reported, not fixed by shortening)
+  for (let k = .95; edge9 && !SIZE13 && laid.hits && k >= NAMEPLATE_MIN_LENGTH_SCALE - 1e-9; k -= .05) laid = layoutProps(plen = capLen * k);
+  if (edge9 && !SIZE12 && !SIZE13 && plen < (np.w11 ?? np.w) * FURNITURE_REF_WIDTH_PX / 100) np.w = plen * 100 / FURNITURE_REF_WIDTH_PX;
   if (laid.hits && DEBUG_LOG) console.log('[court] nameplate still overlaps', laid.hits, 'prop(s) on', role);
   const props = PROPS_ENABLED ? laid.svg : '';
   let stand = '';
   if (BALANCE_FIX) { // v3: nameplate on the top's inner side, tilted like the desk's long edges; v4: standing at the front end, upright
     const P = FURNITURE_PERSPECTIVE, cy = cyFor(plen);
-    const [lx, ly] = FIT11 ? fitCenter() : persp([cx, cy]);
+    if (SIZE12 || SIZE13) plen = np.w * FURNITURE_REF_WIDTH_PX / 100; // the text-sized plate, same center line and edge inset
+    let thickDraw = thickNow;
+    const maxEdge = (NAMEPLATE_SIZE_V15 ? NAMEPLATE_MAX_EDGE_PCT_V15 : NAMEPLATE_MAX_EDGE_PCT) / 100 * fit.L;
+    if ((SIZE13 || NAMEPLATE_SIZE_V15) && FIT11 && plen > maxEdge) { // too long for this desk: shrink this plate only
+      const k = maxEdge / plen;
+      Object.assign(np, { w: np.w * k, h: np.h * k, font: np.font * k });
+      plen *= k; thickDraw *= k;
+      if (DEBUG_LOG) console.log('[court] nameplate scale reduced on', role, 'x', k.toFixed(3));
+    }
+    const [lx, ly] = FIT11 ? fitCenter(thickDraw, SIZE13 ? PLATE_INSET13 : NAMEPLATE_EDGE_INSET_PX) : persp([cx, cy]);
     np.x = box.x + lx * kx;
     np.y = box.y + ly * ky;
     if (FIT11) { // plate parallel to the edge: base and shadow tilt with it
       const sp = NAMEPLATE_V4.standPx, at = (dx, dy, inner) => `<g transform="translate(${fNum(lx + dx)} ${fNum(ly + dy)}) rotate(${fNum(fit.deg)})">${inner}</g>`;
-      stand = at(PROP_SHADOW.dx, PROP_SHADOW.dy, fRect('shadow', -thick / 2, -plen / 2 + sp, thick, plen))
-            + at(0, 0, fRect('frontDark', -thick / 2 - 1, -plen / 2 + sp, thick + 2, plen));
+      stand = at(PROP_SHADOW.dx, PROP_SHADOW.dy, fRect('shadow', -thickDraw / 2, -plen / 2 + sp, thickDraw, plen))
+            + at(0, 0, fRect('frontDark', -thickDraw / 2 - 1, -plen / 2 + sp, thickDraw + 2, plen));
       NAMEPLATE_ROTATION[role] += fit.deg;
       if (DEBUG_LOG) console.log('[court] nameplate', role, 'length', +(plen / fit.L * 100).toFixed(1) + '% of the edge', 'rotation', +NAMEPLATE_ROTATION[role].toFixed(2));
     } else if (FIX4) { // small dark base peeking out below the plate (toward the camera), with its floor shadow
@@ -1786,6 +1946,11 @@ if (DOOR_DECOR_VISIBLE_UNDER_DIALOGUE) {
 }
 const deskClip = Object.assign(document.createElement('div'), { id: 'deskClip' });
 deskClip.style.clipPath = clipInset(FIX6 ? JUDGE_DESK_CLIP_V6 : DESK_CLIP);
+if (JUDGE_TOPVIEW_V18 && FIX6 && JUDGE_TOPVIEW_REVEAL === 'shoulders') { // overlap line = seated sprite top + head + reveal
+  const ja = AVATARS.find(a => a.id === 'judge'), rowH = 4 * AVATAR_SCALE * ASPECT_RATIO / 12, y = ja.y - 12 * rowH + (8 + 8 * JUDGE_TOPVIEW_REVEAL_RATIO) * rowH;
+  const C = JUDGE_DESK_CLIP_V6;
+  deskClip.style.clipPath = clipInset({ x: C.x, y, w: C.w, h: C.y + C.h - y });
+}
 if (FIX6) {
   court.classList.add('fix-v6');
   court.classList.toggle('judge-label-side', JUDGE_LABEL_V6.placement === 'side');
@@ -1864,6 +2029,51 @@ function layoutStand() {
   });
 }
 document.fonts.ready.then(layoutStand);
+// v15 check: per plate, ink height H and the four ink-to-inner-edge gaps (px, unrotated) / H, from computed sizes + text metrics
+function measurePlates() { return [...document.querySelectorAll('.nameplate.v15')].map(measurePlate); }
+function measurePlate(el) {
+  {
+    const b = el.firstChild, sp = b.firstChild, cs = getComputedStyle(el), bs = getComputedStyle(b), ss = getComputedStyle(sp);
+    const f = parseFloat(cs.fontSize), PW = parseFloat(cs.width), PH = parseFloat(cs.height);
+    const bx = parseFloat(cs.paddingLeft) + parseFloat(bs.borderLeftWidth), by = parseFloat(cs.paddingTop) + parseFloat(bs.borderTopWidth);
+    const line = NAMEPLATE_FRAME_INNER_EM.line * f, orn = (el.classList.contains('ornate') ? NAMEPLATE_ORNAMENT_EM.width + NAMEPLATE_ORNAMENT_EM.gap : 0) * f;
+    const inner = { x0: bx + line + orn, x1: PW - bx - line - orn, y0: by + line, y1: PH - by - line };
+    const spW = parseFloat(ss.width), spH = parseFloat(ss.height), mr = parseFloat(ss.marginRight);
+    const spX = bx + (PW - 2 * bx - (spW + mr)) / 2, spY = by + (PH - 2 * by - spH) / 2;
+    const m = plateMetrics(sp.textContent, f), tx = parseFloat(el.style.getPropertyValue('--tx')) * f, ty = parseFloat(el.style.getPropertyValue('--ty')) * f;
+    const base = spY + (spH - (m.fA + m.fD)) / 2 + m.fA + ty, H = m.iA + m.iD;
+    const ink = { x0: spX + tx - m.iL, x1: spX + tx + m.iR, y0: base - m.iA, y1: base + m.iD };
+    if (el.classList.contains('dbg-pad')) {
+      const i = el.querySelector('i.ink') ?? el.appendChild(Object.assign(document.createElement('i'), { className: 'ink' }));
+      Object.assign(i.style, { left: ink.x0 + 'px', top: ink.y0 + 'px', width: ink.x1 - ink.x0 + 'px', height: ink.y1 - ink.y0 + 'px' });
+    }
+    const g = { top: ink.y0 - inner.y0, bottom: inner.y1 - ink.y1, left: ink.x0 - inner.x0, right: inner.x1 - ink.x1 };
+    const r = k => +(g[k] / H).toFixed(3), P = NAMEPLATE_PADDING;
+    const ok = Math.abs(r('top') - P.vertical) <= .02 && Math.abs(r('bottom') - P.vertical) <= .02
+            && Math.abs(r('left') - P.horizontal) <= .02 && Math.abs(r('right') - P.horizontal) <= .02;
+    return { plate: (el.parentElement.id === 'closeup' ? 'closeup ' : 'top ') + sp.textContent, H: +H.toFixed(2),
+             top: +g.top.toFixed(2), bottom: +g.bottom.toFixed(2), left: +g.left.toFixed(2), right: +g.right.toFixed(2),
+             'top/H': r('top'), 'bottom/H': r('bottom'), 'left/H': r('left'), 'right/H': r('right'), ok, _g: g, _H: H, _PW: PW, _PH: PH };
+  }
+}
+// Gold border widths snap to device pixels on small plates, which widens the inner area a little: measure, then resize each plate
+// by the difference so the gaps land on NAMEPLATE_PADDING (re-run on resize)
+function fitPlatePadding() {
+  const P = NAMEPLATE_PADDING;
+  document.querySelectorAll('.nameplate.v15').forEach(el => {
+    el.style.width = el.dataset.w + 'cqw';
+    el.style.height = el.dataset.h + 'cqw';
+    const m = measurePlate(el), perCqw = m._PW / el.dataset.w; // px per cqw here
+    const ex = (m._g.left + m._g.right) / 2 - P.horizontal * m._H, ey = (m._g.top + m._g.bottom) / 2 - P.vertical * m._H;
+    el.style.width = (m._PW - 2 * ex) / perCqw + 'cqw';
+    el.style.height = (m._PH - 2 * ey) / perCqw + 'cqw';
+  });
+  console.table(measurePlates().map(({ _g, _H, _PW, _PH, ...row }) => row));
+}
+if (NAMEPLATE_SIZE_V15) {
+  document.fonts.ready.then(fitPlatePadding);
+  addEventListener('resize', fitPlatePadding);
+}
 addEventListener('resize', layoutStand);
 // Where an advocate steps out to (speaking, losing): the v5 spot, or STAND_OFFSET / kneelOffset toward the center
 const forthSpot = (id, offset) => STAND_FIX_V5 && standPos[id] ? standPos[id] : { x: seatOf(id).x + offset * STAND_DIR[id], y: seatOf(id).y };
@@ -1915,6 +2125,17 @@ NAMEPLATES.forEach(n => {
   Object.assign(el.style, { left: n.x + '%', top: n.y + '%', width: (stacked ? h : n.w) + 'cqw',
                             height: (stacked ? n.w : h) + 'cqw', fontSize: (n.font ?? h * 0.5) + 'cqw' });
   el.classList.toggle('stand', !!n.stand);
+  el.classList.toggle('wall', !!n.wall);
+  el.classList.toggle('v13', !!n.v13);
+  if (n.v15) {
+    el.classList.add('v15');
+    el.dataset.role = n.role;
+    el.style.setProperty('--tx', n.shift[0] + 'em');
+    el.style.setProperty('--ty', n.shift[1] + 'em');
+    el.style.setProperty('--inner-off', NAMEPLATE_FRAME_INNER_EM.line + 'em');
+    Object.assign(el.dataset, { w: n.w, h: n.h ?? n.w / 4.5 }); // cqw, before the post-layout padding correction
+    el.classList.toggle('dbg-pad', DEBUG_NAMEPLATE_PADDING);
+  }
   if (rot !== undefined && !stacked) el.style.setProperty('--rot', rot + 'deg');
   (n.scene === 'closeup' ? closeup : court).append(el);
 });
@@ -2248,9 +2469,22 @@ async function talk(el, ms, g) {
   el.classList.remove('talking');
   setTalking(el, false);
 }
+// v20 cut-in plan: prosecutor/defender speeches of stages 5~7 in order, numbered per side; picked numbers use CUTIN_SHOUTS
+const SPEECH_PLAN = [];
+[[5, 'opening', ['prosecutor', 'defender'].map(id => ({ id, text: OPENING[id] }))],
+ ...ISSUE_DEBATE.map(({ lines }, i) => [6, 'issue' + (i + 1), lines]),
+ [7, 'closing', CLOSING]].forEach(([stage, part, lines]) => lines.forEach(({ id, text }) => {
+  if (id !== 'prosecutor' && id !== 'defender') return;
+  const n = SPEECH_PLAN.filter(x => x.side === id).length + 1, key = `${part}.${id}`, picked = CUTIN_SPEECH_INDEXES.includes(n);
+  if (picked && !CUTIN_SHOUTS[key]) console.warn('[court] cut-in skipped, no CUTIN_SHOUTS entry for', key);
+  SPEECH_PLAN.push({ side: id, n, stage, id: key, text, shout: picked ? CUTIN_SHOUTS[key] ?? null : null });
+}));
+const CUTIN_BY_TEXT = new Map(SPEECH_PLAN.map(x => [x.text, x.shout]));
+if (CUTIN_PLACEMENT_V20) console.table(SPEECH_PLAN.map(x => ({ side: x.side, n: x.n, stage: x.stage, id: x.id, line: x.text.slice(0, 15),
+  cutin: x.shout ? '○' : '×', shout: x.shout ?? '' })));
 async function sayAll(lines, g) {
   for (const [i, { id, text, cutin }] of lines.entries()) {
-    await say(id, text, OPENING_MS, g, cutin);
+    await say(id, text, OPENING_MS, g, CUTIN_PLACEMENT_V20 ? CUTIN_BY_TEXT.get(text) ?? undefined : cutin);
     if (g !== gen) return;
     if (lines[i + 1]?.id !== id) await returnSeat(id, g); // stay standing if the same person speaks next
     if (g !== gen) return;
