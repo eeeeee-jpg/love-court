@@ -1,38 +1,51 @@
 # love-court: "Love Trial" demo prototype
 
-Demo video of the "Love Trial" feature (side content for a dating app), seen from one juror ("me"). Everyone else is a scripted NPC. Real-time play, multi-user and deployment are out of scope for the demo.
+Demo of the "Love Trial" feature (side content for a dating app), seen from one juror ("me", ME). Everyone else is scripted.
 
-## Rules
-- Single file index.html. No external libraries, fonts, images or network requests (the AI verdict hookup is the only exception, needs approval). No emoji: draw shapes in CSS/SVG.
-- English for code, comments and docs. Text shown on screen stays Korean and lives in SCENARIO CONFIG; internal keys are English (judge, prosecutor, defender, juror).
-- Change only what was asked. When done, report only the changed file paths.
-- Branches: `scenario` = scenario work, `design` = design work, merged into `main`. Check the current branch before starting.
-- Direction: this is a demo first; a fully playable multi-user game follows. Keep scripted parts (NPC lines, NPC votes, auto entry) behind demo-mode flags so they can be replaced by real user input later.
+## Language
+- English for code, comments, file names and docs. Only on-screen text is Korean, and it lives in SCENARIO CONFIG.
+- Internal keys stay English (judge, prosecutor, defender, juror, innocent, protest).
 
-## Case and vote
-- Case: "12-hour no-contact". Options: A not guilty / B protest justified.
-- 7 votes, so no tie. NPC votes are fixed so A not guilty always wins, whatever "me" votes.
-- Humans speak and vote. AI only writes the verdict text from the result and never decides it. Verdict: formal court style + a one-line rider, read aloud with browser TTS (ko-KR).
-- Chat filter is staged only (masked dots, then a block notice), on its own stage. Never write real profanity or hate terms.
+## Project rules
+- Single file index.html. No network requests, CDN, packages or font downloads. Fonts: local files in fonts/ only (Galmuri, SIL OFL; fonts/LICENSE.txt stays with them). No emoji: draw shapes in CSS/SVG.
+- Change only what was asked; report only the changed file paths when done.
+- Never read, print or commit secrets (.env, keys, tokens). Secrets go by environment variable name only.
+- Git only when asked: English messages, no secrets, no force push.
+- Every visual change goes behind a version switch (`*_V<n>`, false = the previous state); values go in DESIGN CONFIG.
 
-## Stages (STAGES)
-0 role select -> 1 entry -> 2 judge enters -> 3 opening -> 4 case intro -> 5 opening statements -> 6 issue arguments -> 7 closing -> 8 jury discussion (chat) -> 9 chat filter demo -> 10 verdict vote -> 11 verdict reading (close-up) -> 12 reactions + adjournment -> 13 outro (next trial teaser)
+## Direction
+- Demo first; a playable multi-user game follows. Scripted parts (NPC lines, NPC votes, auto entry) should sit behind demo-mode flags so real input can replace them. Today only the role card has demo settings (DEMO_PICK_ROLE, DEMO_ALLOWED_ROLES); NPC lines/votes/entry have no flag yet.
+- Only the verdict text will call a real AI: key by env var name, needs a server, fallback text on failure. Not hooked up yet (no network code; JUDGMENT_TEXTS are the fallback).
 
-## Controls
-- Two arrow buttons (prev / next) below the stage, plus the left/right arrow keys.
-- Each stage plays on its own; next is enabled when it ends. Stage 10 waits for my vote; 11 -> 12 -> 13 chain without input.
-- Prev stops playback, rebuilds the previous stage's start state (buildState) and replays it.
-- During a cut-in line, next completes the typing, then skips the hold.
+## Decisions
+- Case "12-hour no-contact". Options A not guilty / B protest justified. 7 votes, no tie; NPC_VOTES make A win.
+- Gauge (stages 6~10): the speaking side rises (GAUGE_LINES per stage + speaker, GAUGE_MODE zero_sum).
+- Chat filter is staged only (masked dots, block notice); never real profanity.
+- Close-up gavel strikes, verdict stamp (VERDICT_STAMPS), TTS via speechSynthesis ko-KR with timer fallback.
 
-## Systems
-Bottom dialogue box (name tag, typewriter, highlight words), framed panels, juror mood gauge (stages 6~9), shout cut-ins, close-up gavel + verdict stamp, winner/loser reactions, gold nameplates, TTS with fallback timers and a per-stage safety timer.
+## Stages (STAGES in code: 14 entries, 0~13)
+0 role select (logo intro) -> 1 entry -> 2 judge enters -> 3 opening -> 4 case intro -> 5 opening statements -> 6 issue arguments -> 7 closing -> 8 jury discussion (chat) -> 9 chat filter demo -> 10 verdict vote -> 11 verdict reading (close-up) -> 12 reactions + adjournment -> 13 outro (trailer popup / trailer)
 
-## Config (top of index.html)
-- SCENARIO CONFIG: ME, OPTIONS, OPTION_LABELS, OPTION_SHORT, NPC_VOTES, CASE, OPENING, ISSUE_DEBATE (cutin), CLOSING, JUROR_LINES, JUDGMENT_TEXTS, JUDGMENT_RIDERS, VERDICT_STAMPS, CLOSING_LINE, OUTRO, FILTER_NOTICE, GAUGE_TEXT, GAUGE_START, GAUGE_STEPS, HIGHLIGHT_WORDS, PANEL_TABS, NAV_LABELS, PROSECUTOR_NICK, DEFENDER_NICK.
-- DESIGN CONFIG (values that could go either way go here): ASPECT_RATIO, BG_TOPVIEW, BG_CLOSEUP, AVATARS, PROPS, PANEL, DESK_CLIP, CLOSEUP_JUDGE, CLOSEUP_DESK_CLIP, NAMEPLATES, NAMEPLATE_GOLD, UI_PALETTE, UI_FONT, DIALOGUE_MODE, DIALOGUE_BOX, CHAT_STAGES, FRAME_PATTERN, FRAME_FILL, GAUGE, CUTIN, CUTIN_INTRO_MS, CUTIN_HOLD_MODE, LINE_HOLD_AFTER_TYPING_MS, LINE_MIN_TOTAL_MS, GAVEL, GAVEL_ENABLED, WINNER, REACTION, SPEECH_MS_PER_CHAR, SAFETY_UNLOCK_MS, DEBUG_LOG.
+## Systems and switches
+- Dialogue box, trial log (CHAT_READABILITY_V2, CHAT_PADDING_V22), gauge (PIXEL_UI_V29 restyle).
+- Cut-ins with portraits: CUTIN_PLACEMENT_V20, CUTIN_SOUND_ENABLED. Speaking order: SPEECH_ORDER_V24.
+- Furniture/layout: FURNITURE_FIX_V2, BALANCE_FIX_V3, FURNITURE_FIX_V4, STAND_FIX_V5, LAYOUT_FIX_V6, JUROR_RAISE_V7, SEATED_FIX_V9, WALK_FIX_V10, JUDGE_TOPVIEW_V18, PROPS_ENABLED, DOOR_ANIM_ENABLED.
+- Nameplates: NAMEPLATE_FIT_V11, NAMEPLATE_SIZE_V12/V13/V15, NAMEPLATE_ADJUST_V21.
+- Pixel avatars: AVATAR_V2 (AVATAR_PALETTE, AVATAR_LAYERS). Pixel font: PIXEL_FONT_V28.
+- Role card: ROLE_CARD_V25, ROLE_OPEN_V26, ROLE_CARD_V27. Logo: LOGO_INTRO_ENABLED.
+- Trailer: TRAILER_ENABLED, TRAILER_POPUP_ENABLED, TRAILER_AVATAR_V23. Gavel: GAVEL_ENABLED.
+- Speaker shots (virtual camera): not built.
 
-## Remaining
-- Speaker shots (virtual camera): not built yet.
-- Detail design fixes.
-- Cut transition tempo.
-- AI verdict text hookup.
+## Visuals (images/)
+- In use: bg-top.png, bg-front.png, logo.png, prosecutor-point.png, defender-point.png.
+- Unused by default: judge-neutral.png (only with JUDGE_USE_PORTRAIT = true).
+- Not made: bg-prosecutor, bg-defender. reference/ is never used or committed.
+
+## Branches
+- `scenario`: SCENARIO CONFIG and flow only. `design`: DESIGN CONFIG and visuals only. Both merge into `main`.
+- Check the current branch before starting; commit before a large change.
+
+## Open items
+- Merge design into main (unverified: design is ahead of main since the last merge).
+- Verdict AI hookup; real chat filter and anonymization; real-time multi-user play.
+- Missing assets (speaker-shot backgrounds); speaker shots.
