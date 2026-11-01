@@ -320,6 +320,39 @@
   .bar-row.win { color: #ffe08a; font-weight: bold; }
   .bar-row.win .bar i { background: #ffe08a; }
   #chatInput:disabled { opacity: .5; filter: grayscale(1); }
+  /* CHAT_PADDING_V22: padding tokens inside the inner gold line; faded top; separated input bar */
+  /* the log's own padding resolves cqw against the stage, so it uses the tokens rescaled to the log width (--ppo-*) */
+  #stage.chat-pad #chat { padding: calc(var(--ppo-top) + var(--pp-in)) calc(var(--ppo-x) + var(--pp-in)) calc(var(--ppo-bottom) + var(--pp-in)); }
+  #stage.chat-pad #msgs { padding: 0; mask-image: linear-gradient(to bottom, transparent 0, #000 var(--pp-fade)); }
+  #stage.chat-pad #chat .msg { margin-bottom: var(--pp-gap); }
+  #stage.chat-pad #chat .msg b { margin-bottom: var(--pp-name); }
+  #stage.chat-pad #chat .msg > span { padding: var(--pp-bub-y) var(--pp-bub-x); }
+  #stage.chat-pad .chat-inbar { position: relative; margin: var(--ci-gap) calc(var(--pp-x) * -1) calc(var(--pp-bottom) * -1); padding: var(--ci-pad-y) var(--pp-x) calc(var(--pp-bottom) - .2cqw);
+    background: var(--ci-band); }
+  #stage.chat-pad .chat-inbar::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-base) 15%, var(--gold-light) 50%, var(--gold-base) 85%, transparent); }
+  .chat-field { position: relative; display: flex; align-items: center; gap: .9cqw; height: var(--ci-h); padding: 0 var(--ci-pad-x);
+    border-radius: var(--ci-r); background: var(--ci-bg); box-shadow: inset 0 2px 6px rgba(0,0,0,.45), 0 0 0 3px var(--ci-glow); }
+  .chat-field::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: var(--ci-b); pointer-events: none;
+    background: linear-gradient(var(--gold-light), var(--gold-base), var(--gold-dark));
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; }
+  .chat-field:has(#chatInput:disabled) { opacity: .55; filter: grayscale(1); box-shadow: inset 0 2px 6px rgba(0,0,0,.45); }
+  .chat-field:has(#chatInput:disabled)::before { display: none; }
+  .chat-field:has(#chatInput.shake) { animation: shake .3s; }
+  #stage.chat-pad #chatInput { flex: 1; min-width: 0; margin: 0; padding: 0; border: 0; background: none; color: var(--ci-text); outline: none; height: 100%; }
+  #stage.chat-pad #chatInput.shake { animation: none; }
+  #stage.chat-pad #chatInput::placeholder { color: var(--ci-ph); }
+  .chat-field .pencil { flex: none; height: calc(var(--chat-input) * .9cqw); width: auto; display: block; }
+  .chat-field .send { flex: none; width: calc(var(--chat-input) * 1.3cqw); aspect-ratio: 1; border-radius: 50%; position: relative;
+    background: linear-gradient(var(--gold-light), var(--gold-base), var(--gold-dark)); }
+  .chat-field .send::after { content: ''; position: absolute; left: 50%; top: 50%; translate: -35% -50%;
+    border: solid transparent; border-width: .32em 0 .32em .5em; border-left-color: #2a170b; font-size: calc(var(--chat-input) * 1cqw); }
+  .chat-caret { position: absolute; top: 22%; bottom: 22%; width: 2px; background: var(--ci-text); animation: caretBlink var(--ci-caret) steps(1) infinite; pointer-events: none; }
+  .chat-field:has(#chatInput:disabled) .chat-caret { display: none; }
+  @keyframes caretBlink { 50% { opacity: 0; } }
+  #stage.chat-pad #notice { margin: .5cqw 0 0; min-height: 1.4em; color: var(--ci-notice); text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+  #stage.pp-case #casePanel:not(.doc) { padding: var(--pp-top) var(--pp-x) var(--pp-bottom); }
+  #stage.pp-dialogue #dialog { padding: var(--pp-top) var(--pp-x) var(--pp-bottom); }
   .overlay { position: absolute; inset: 0; z-index: 220; display: flex; align-items: center; justify-content: center;
              background: rgba(0,0,0,.65); transition: opacity .6s; }
   .overlay[hidden] { display: none; }
@@ -677,6 +710,7 @@ const TRAILER_TEXT = {
   note: '다음 재판 · 곧 개정',
   ask: '당신이라면, 어느 쪽 손을 들어주시겠습니까?',
   restart: '처음부터',
+  coupleCaption: '법정의 두 사람, 사실은 연인', // placeholder; shown only with TRAILER_COUPLE_HINT
   replay: '다시 보기',
   popupTab: '다음 재판 예고편',
   popupNew: 'NEW',
@@ -716,6 +750,12 @@ const ISSUE_DEBATE = [
     { id: 'prosecutor', text: '열두 시간 동안 소식이 없다면 누구라도 걱정합니다. 걱정은 구속이 아니라 애정의 표현입니다.', cutin: '걱정은 구속이 아닙니다!' },
   ] },
 ];
+// Speaking order v24: in stages 5~7 the prosecutor and defender alternate (prosecutor first). Same-speaker runs are fixed by
+// reordering lines inside their own block only (opening, each issue, closing); judge/system lines keep their place.
+// false = the order as written below
+const SPEECH_ORDER_V24 = true;
+const ENFORCE_ALTERNATION = true;
+const OPENING_ORDER = ['prosecutor', 'defender']; // stage 5 speaking order
 // Cut-in shouts per speech (CUTIN_PLACEMENT_V20): '<part>.<side>', part = opening | issue1 | issue2 | closing.
 // Only speeches picked by CUTIN_SPEECH_INDEXES use them; a picked speech without a shout gets no cut-in (console warning)
 const CUTIN_SHOUTS = {
@@ -1110,6 +1150,16 @@ const REACTION = {
 };
 const OPENING_MS = 4000;
 const JUROR_MS = 3000;
+// ----- Trial log padding + input bar v22 (sizes in cqw of the log itself; panel size unchanged). false = before -----
+const CHAT_PADDING_V22 = true;
+const PANEL_PADDING = { xCqw: 2.6, topCqw: 3.4, bottomCqw: 2.4, messageGapCqw: 1.6, bubblePadYCqw: 1.1, bubblePadXCqw: 1.8, nameGapCqw: 0.5 };
+const PANEL_PADDING_APPLY = ['chat'];  // add 'case' (stage 4 case panel) / 'dialogue' (bottom box) to use the same padding there
+const CHAT_FRAME_INNER_PX = 4;         // .frame: inset gold line ends 4px inside the border; padding counts from there
+const CHAT_FADE_CQW = 4;               // older messages fade out over this height at the top of the list
+const CHAT_INPUT = { heightCqw: 5.2, radiusPx: 10, borderPx: 2, padXCqw: 1.8 };
+const CHAT_INPUT_BAR = { gapCqw: 2, padYCqw: 1.2, band: 'rgba(255,247,230,0.06)', fieldBg: 'rgba(255,247,230,0.10)',
+                         glow: 'rgba(212,175,55,0.18)', text: '#FFF7E6', placeholder: 'rgba(245,236,215,0.78)', caretMs: 1000 };
+const CHAT_NOTICE_COLOR = '#E8352F';   // block notice under the input (deep red, readable on the dark log)
 const CHAT_VISIBLE_MESSAGES = 6;  // trial log keeps this many messages, stacked top to bottom; older ones scroll up out of view
 // ----- Trial log readability v2 (false = before). Font sizes unchanged; PANEL_STYLE.bgOpacity unchanged -----
 const CHAT_READABILITY_V2 = true;
@@ -1127,6 +1177,11 @@ const LOGO_FADEIN_MS = 600;
 const LOGO_OUT_MS = 1000;
 // Stage 13 trailer (~13 s, plays on its own). false: the old next-trial card (OUTRO)
 const TRAILER_ENABLED = true;
+// Trailer cast v23: A = the defender's AVATAR_V2 sprite, B = the prosecutor's (same layers and AVATAR_PALETTE as the top view).
+// false = the old shared side sprite in PALETTES colors
+const TRAILER_AVATAR_V23 = true;
+const TRAILER_COUPLE_HINT = false;   // true: a small heart floats up between them and TRAILER_TEXT.coupleCaption shows first in the setup
+const TRAILER_COUPLE = { captionLeadMs: 1000, heartMs: 1600, heartColor: '#E8557A', heartShade: '#B8324F', heartSizePct: 4 };
 const TRAILER_TIMING_MS = { setup: 1600, line1: 2000, line2: 1800, line3: 2400, line4: 1500, smash: 1600, card: 2200 };
 const TRAILER_CUT_TRANSITION = 'flash'; // 'flash' (white flash between cuts) | 'cut'
 const TRAILER_CAPTIONS_ENABLED = true;  // per-cut variety captions (the setup captions always show)
@@ -1361,6 +1416,48 @@ document.querySelectorAll('.panel').forEach(el => Object.assign(el.style,
   { left: PANEL.x + '%', top: PANEL.y + '%', width: PANEL.w + '%', height: PANEL.h + '%' }));
 Object.assign(chat.style, { left: '50%', top: CHAT_PANEL.topPct + '%',
                             width: CHAT_PANEL.widthPct + '%', height: CHAT_PANEL.heightPct + '%' });
+if (CHAT_PADDING_V22) {
+  const P = PANEL_PADDING, C = CHAT_INPUT, B = CHAT_INPUT_BAR;
+  PANEL_PADDING_APPLY.forEach(k => stage.classList.add(k === 'chat' ? 'chat-pad' : 'pp-' + k));
+  [['--pp-x', P.xCqw + 'cqw'], ['--pp-top', P.topCqw + 'cqw'], ['--pp-bottom', P.bottomCqw + 'cqw'], ['--pp-gap', P.messageGapCqw + 'cqw'],
+   ['--pp-name', P.nameGapCqw + 'cqw'], ['--pp-bub-y', P.bubblePadYCqw + 'cqw'], ['--pp-bub-x', P.bubblePadXCqw + 'cqw'],
+   ['--pp-in', CHAT_FRAME_INNER_PX + 'px'], ['--pp-fade', CHAT_FADE_CQW + 'cqw'],
+   ...['x', 'top', 'bottom'].map(k => ['--ppo-' + k, P[k + 'Cqw'] * CHAT_PANEL.widthPct / 100 + 'cqw']),
+   ['--ci-h', C.heightCqw + 'cqw'], ['--ci-r', C.radiusPx + 'px'], ['--ci-b', C.borderPx + 'px'], ['--ci-pad-x', C.padXCqw + 'cqw'],
+   ['--ci-gap', B.gapCqw + 'cqw'], ['--ci-pad-y', B.padYCqw + 'cqw'], ['--ci-band', B.band], ['--ci-bg', B.fieldBg], ['--ci-glow', B.glow],
+   ['--ci-text', B.text], ['--ci-ph', B.placeholder], ['--ci-caret', B.caretMs + 'ms'], ['--ci-notice', CHAT_NOTICE_COLOR]]
+    .forEach(([k, v]) => stage.style.setProperty(k, v));
+  if (PANEL_PADDING_APPLY.includes('chat')) {
+    // Input bar: [pencil] [input] [send] + caret, block notice under it, on a faint band below a gold rule
+    const mk = (t, className) => Object.assign(document.createElement(t), { className }); // (tag() is defined further down)
+    const bar = mk('div', 'chat-inbar'), field = mk('div', 'chat-field');
+    chatInput.before(bar);
+    field.innerHTML = '<svg class="pencil" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 14l1-4 8-8 3 3-8 8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" style="color:var(--gold-light)"/><path d="M9.5 3.5l3 3" stroke="currentColor" stroke-width="1.6" style="color:var(--gold-light)"/></svg>';
+    field.append(chatInput, mk('i', 'chat-caret'), Object.assign(mk('span', 'send'), { ariaHidden: 'true' }));
+    bar.append(field, notice);
+    // Caret after the typed text (readonly input shows none): canvas width of the value in the input's font
+    const caret = field.querySelector('.chat-caret'), ctx2 = document.createElement('canvas').getContext('2d');
+    setInterval(() => {
+      if (chat.hidden) return;
+      const cs = getComputedStyle(chatInput);
+      ctx2.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      caret.style.left = chatInput.offsetLeft + Math.min(chatInput.clientWidth, ctx2.measureText(chatInput.value).width) + 1 + 'px';
+    }, 100);
+  }
+}
+// v22 check: gaps from the inner gold line to the content, input height, bubble padding (px)
+function measureChat() {
+  const r = chat.getBoundingClientRect(), b = parseFloat(getComputedStyle(chat).borderTopWidth), inner = CHAT_FRAME_INNER_PX + b;
+  const m = msgs.getBoundingClientRect(), bar = chat.querySelector('.chat-field')?.getBoundingClientRect() ?? chatInput.getBoundingClientRect();
+  const tab = chat.querySelector('.frame-tab').getBoundingClientRect(), first = msgs.firstElementChild?.getBoundingClientRect();
+  const bub = msgs.querySelector('.msg > span'), bs = bub && getComputedStyle(bub), n = notice.getBoundingClientRect();
+  const row = { top: m.top - (r.top + inner), left: m.left - (r.left + inner), right: r.right - inner - m.right, bottom: r.bottom - inner - Math.max(bar.bottom, n.bottom),
+                inputHeight: bar.height, bubblePadY: bs ? parseFloat(bs.paddingTop) : 0, bubblePadX: bs ? parseFloat(bs.paddingLeft) : 0,
+                tabToFirstMsg: first ? first.top - tab.bottom : null, msgsToInput: bar.top - m.bottom };
+  return Object.fromEntries(Object.entries(row).map(([k, v]) => [k, v == null ? v : +v.toFixed(2)]));
+}
+if (CHAT_PADDING_V22) new MutationObserver(() => !chat.hidden && requestAnimationFrame(() => console.table([measureChat()])))
+  .observe(chat, { attributes: true, attributeFilter: ['hidden'] });
 [['--chat-title', CHAT_PANEL.titleCqw], ['--chat-gap', CHAT_MESSAGE_GAP_CQW + 'cqw'], ['--chat-name', CHAT_PANEL.nameCqw], ['--chat-body', CHAT_PANEL.bodyCqw],
  ['--chat-input', CHAT_PANEL.inputCqw], ['--chat-lh', CHAT_PANEL.lineHeight]].forEach(([k, v]) => chat.style.setProperty(k, v));
 stage.classList.toggle('chat-hides-dlg', CHAT_HIDES_DIALOGUE_BOX);
@@ -2497,9 +2594,53 @@ async function talk(el, ms, g) {
   el.classList.remove('talking');
   setTalking(el, false);
 }
+// v24: alternate the advocates across stages 5~7, swapping only inside a block; logs the order before/after
+function speechBlocks() {
+  return [[5, OPENING_ORDER.map(id => ({ id, text: OPENING[id] }))], ...ISSUE_DEBATE.map(({ lines }) => [6, lines]), [7, CLOSING]];
+}
+function speechTable(tag) {
+  const rows = [], plan = new Map(SPEECH_PLAN_PREVIEW());
+  speechBlocks().forEach(([stage, lines]) => lines.filter(l => l.id === 'prosecutor' || l.id === 'defender')
+    .forEach(l => rows.push({ n: rows.length + 1, stage, speaker: l.id, line: l.text.slice(0, 15), cutin: plan.get(l.text) ? '○' : '×' })));
+  const runs = rows.filter((r, i) => i && r.speaker === rows[i - 1].speaker).length;
+  console.log(`[court] speaking order (${tag}) — same-speaker runs: ${runs}`);
+  console.table(rows);
+  return runs;
+}
+// Cut-in picks by text (per side numbering doesn't depend on the cross-side order)
+const SPEECH_PLAN_PREVIEW = () => {
+  const count = {}, out = [];
+  speechBlocks().forEach(([, lines], b) => lines.forEach(({ id, text }) => {
+    if (id !== 'prosecutor' && id !== 'defender') return;
+    count[id] = (count[id] ?? 0) + 1;
+    const part = b === 0 ? 'opening' : b <= ISSUE_DEBATE.length ? 'issue' + b : 'closing';
+    out.push([text, CUTIN_SPEECH_INDEXES.includes(count[id]) ? CUTIN_SHOUTS[`${part}.${id}`] ?? null : null]);
+  }));
+  return out;
+};
+if (SPEECH_ORDER_V24 && ENFORCE_ALTERNATION) {
+  speechTable('before');
+  let last = null;
+  const unresolved = [];
+  speechBlocks().forEach(([stage, lines], b) => {
+    const slots = lines.map((l, i) => [l, i]).filter(([l]) => l.id === 'prosecutor' || l.id === 'defender');
+    const pool = slots.map(([l]) => l), order = [];
+    slots.forEach(() => {
+      const want = last ? (last === 'prosecutor' ? 'defender' : 'prosecutor') : 'prosecutor';
+      const k = Math.max(0, pool.findIndex(l => l.id === want));
+      if (pool[k].id !== want) unresolved.push(`stage ${stage} block ${b}: ${want} expected`);
+      order.push(pool.splice(k, 1)[0]);
+      last = order.at(-1).id;
+    });
+    if (b === 0) OPENING_ORDER.splice(0, OPENING_ORDER.length, ...order.map(l => l.id)); // the opening block is generated from OPENING_ORDER
+    else slots.forEach(([, i], j) => lines[i] = order[j]);
+  });
+  const runs = speechTable('after');
+  if (unresolved.length || runs) console.warn('[court] alternation unresolved:', unresolved);
+}
 // v20 cut-in plan: prosecutor/defender speeches of stages 5~7 in order, numbered per side; picked numbers use CUTIN_SHOUTS
 const SPEECH_PLAN = [];
-[[5, 'opening', ['prosecutor', 'defender'].map(id => ({ id, text: OPENING[id] }))],
+[[5, 'opening', OPENING_ORDER.map(id => ({ id, text: OPENING[id] }))],
  ...ISSUE_DEBATE.map(({ lines }, i) => [6, 'issue' + (i + 1), lines]),
  [7, 'closing', CLOSING]].forEach(([stage, part, lines]) => lines.forEach(({ id, text }) => {
   if (id !== 'prosecutor' && id !== 'defender') return;
@@ -2873,8 +3014,8 @@ const [trShakeEl, trScene, trPack, trHit, trGavel, trBubble, trSfx, trTag, trCap
   ['.tr-shake', '.tr-scene', '.tr-pack', '.tr-hit', '.tr-gavel', '.tr-bubble', '.tr-sfx', '.tr-tag', '.tr-cap', '.tr-flash', '.tr-card'].map(trq);
 const trChars = { B: trq('.tr-char.b'), A: trq('.tr-char.a') };
 // B: prosecutor sprite facing right (left seat); A: defender sprite mirrored, facing left (right seat)
-trChars.B.innerHTML = spriteSVG('side', PALETTES.prosecutor, false) + `<b>${TRAILER_TEXT.tags.B}</b><div class="tr-fx"></div>`;
-trChars.A.innerHTML = spriteSVG('side', PALETTES.defender, true) + `<b>${TRAILER_TEXT.tags.A}</b><div class="tr-fx"></div>`;
+trChars.B.innerHTML = spriteSVG('side', PALETTES.prosecutor, false, TRAILER_AVATAR_V23 ? 'prosecutor' : undefined) + `<b>${TRAILER_TEXT.tags.B}</b><div class="tr-fx"></div>`;
+trChars.A.innerHTML = spriteSVG('side', PALETTES.defender, true, TRAILER_AVATAR_V23 ? 'defender' : undefined) + `<b>${TRAILER_TEXT.tags.A}</b><div class="tr-fx"></div>`;
 // Pixel gavel: head (face down) on the left, handle to the right; rotates around the head's bottom center
 trGavel.innerHTML = `<svg viewBox="0 0 32 14"><rect x="9" y="5" width="20" height="4" fill="#5e3216"/><rect x="9" y="5" width="20" height="1" fill="#7a4624"/>`
   + `<rect x="29" y="4" width="3" height="6" fill="#3a1c0a"/><rect x="0" y="0" width="9" height="14" fill="#4a2410"/><rect x="1" y="1" width="2" height="12" fill="#6e3a1c"/>`
@@ -2985,6 +3126,18 @@ async function playTrailer(g) {
   trailer.animate([{ opacity: 0 }, { opacity: 1 }], { duration: TRAILER_FADEIN_MS });
   trZoom(TR_FOCUS.wide, 1, T.setup);
   trTag.textContent = TRAILER_TEXT.reenact;
+  if (TRAILER_COUPLE_HINT) { // optional: heart between the two + the couple line, before the setup captions
+    const C = TRAILER_COUPLE, heart = Object.assign(tag('div'), { className: 'tr-heart' });
+    heart.innerHTML = `<svg viewBox="0 0 16 14"><path d="M8 13L1.5 6.5A3.6 3.6 0 0 1 8 2.4a3.6 3.6 0 0 1 6.5 4.1z" fill="${C.heartColor}"/>`
+      + `<path d="M4 3.6a2 2 0 0 0-1.6 2.2" stroke="#fff" stroke-opacity=".7" fill="none"/><path d="M8 13l6.5-6.5" stroke="${C.heartShade}" fill="none"/></svg>`;
+    Object.assign(heart.style, { position: 'absolute', left: '50%', top: '44%', width: C.heartSizePct + '%', translate: '-50% 0', zIndex: 3 });
+    trScene.append(heart);
+    heart.animate([{ transform: 'translateY(0)', opacity: 0 }, { opacity: 1, offset: .25 }, { transform: 'translateY(-160%)', opacity: 0 }],
+                  { duration: C.heartMs, easing: 'ease-out', fill: 'forwards' }).finished.then(() => heart.remove(), () => heart.remove());
+    trCaption([TRAILER_TEXT.coupleCaption]);
+    await wait(C.captionLeadMs);
+    if (g !== gen) return;
+  }
   trCaption(TRAILER_TEXT.setup.slice(0, 1));
   trPack.animate([{ left: '58%' }, { left: '50%' }], { delay: 300, duration: 600, easing: 'ease-out', fill: 'both' });
   await wait(T.setup / 2);
@@ -3185,7 +3338,7 @@ const STAGES = [
   { name: '모두진술', run: async g => {
     casePanel.hidden = true;
     setInputEnabled(false);
-    await sayAll(['prosecutor', 'defender'].map(id => ({ id, text: OPENING[id] })), g);
+    await sayAll(OPENING_ORDER.map(id => ({ id, text: OPENING[id] })), g);
   } },
   { name: '쟁점별 주장·반박', run: async g => {
     gauge.classList.remove('fade');
@@ -3377,7 +3530,7 @@ function buildState(i) {
   msgs.textContent = chatInput.value = notice.textContent = '';
   const log = [];
   // Only lines from stages that showed the log, so a stage's replay starts its own messages from scratch
-  if (i >= 6 && chatShownAt(5)) log.push(...['prosecutor', 'defender'].map(id => ({ id, text: OPENING[id] })));
+  if (i >= 6 && chatShownAt(5)) log.push(...OPENING_ORDER.map(id => ({ id, text: OPENING[id] })));
   if (i >= 7 && chatShownAt(6)) ISSUE_DEBATE.forEach(({ title, lines }) => log.push({ title }, ...lines));
   if (i >= 8 && chatShownAt(7)) log.push(...CLOSING);
   if (i >= 9 && chatShownAt(8)) log.push(...JUROR_LINES);
