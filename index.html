@@ -62,7 +62,7 @@
      hides the legs. Standing or walking, the whole desk stays in front as before */
   #court > .desk-legs { display: none; }
   #court:has(> .avatar.sit[data-id="prosecutor"]) > .prop.fur[data-role="prosecutor"]:not(.desk-legs),
-  #court:has(> .avatar.sit[data-id="defender"]) > .prop.fur[data-role="defender"]:not(.desk-legs) { z-index: 51 !important; }
+  #court:has(> .avatar.sit[data-id="defender"]) > .prop.fur[data-role="defender"]:not(.desk-legs) { z-index: var(--seat-desk-z, 51) !important; }
   #court:has(> .avatar.sit[data-id="prosecutor"]) > .desk-legs[data-role="prosecutor"],
   #court:has(> .avatar.sit[data-id="defender"]) > .desk-legs[data-role="defender"] { display: block; }
   /* Small floor shadow under the prosecutor/defender (below chairs and desks) */
@@ -80,6 +80,15 @@
   .label .jl-role { display: block; font-weight: 400; font-size: var(--jl3-role); opacity: .85; }
   .label .jl-nick { display: block; font-weight: 700; }
   #court.fix-v3 :is(.burst, .impact) { z-index: 101; } /* fireworks / floor-pound dust above the juror labels */
+  /* FURNITURE_FIX_V4: smaller prosecutor/defender sprite (label size kept, closer to the head) */
+  #court.fix-v4 .avatar.side { --w: calc(4cqw * var(--scale) * var(--ascale)); }
+  #court.fix-v4 .avatar.side .label { margin-bottom: var(--adv-label-gap); }
+  /* v4 legs: instead of the clipped desk copy (which left a seam), a seated advocate's sprite drops the part below the seat
+     that lies over the desk (--leg-clip, set in JS) */
+  #court.fix-v4 .avatar.side.sit svg { clip-path: var(--leg-clip); }
+  /* v4: at the seat (sitting or standing) the advocate is drawn over the desk; walking in/out, behind it as before */
+  #court.fix-v4:has(> .avatar.side[data-id="prosecutor"]:not(.forth, .walking)) > .prop.fur[data-role="prosecutor"],
+  #court.fix-v4:has(> .avatar.side[data-id="defender"]:not(.forth, .walking)) > .prop.fur[data-role="defender"] { z-index: var(--seat-desk-z, 51) !important; }
   /* Nameplate: brushed gold base around a black plate with a double gold border. Size/position/rotation set in JS from NAMEPLATES */
   .nameplate { position: absolute; z-index: 98; /* above desks, avatars and desk clips; below labels (100) */ display: flex; padding: .18em; pointer-events: none; border-radius: .12em;
                transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
@@ -98,6 +107,14 @@
     border: .07em solid; border-color: var(--gold-base) transparent transparent var(--gold-base); border-radius: 50%; }
   .nameplate.ornate b::before { left: .35em; transform: translateY(-50%) rotate(-45deg); }
   .nameplate.ornate b::after { right: .35em; transform: translateY(-50%) rotate(135deg); }
+  /* LAYOUT_FIX_V6 judge plate: stands on the desk top on a small dark-oak base with a short floor shadow */
+  .nameplate.stand::before { content: ''; position: absolute; z-index: -1; left: -8%; right: -8%; top: 82%; height: 34%;
+    background: var(--fur-frontDark, #35201A); border: 1px solid var(--fur-outline, #22140D); border-radius: .08em; }
+  .nameplate.stand::after { content: ''; position: absolute; z-index: -2; left: 4%; right: -10%; top: 30%; height: 100%;
+    background: rgba(0,0,0,.35); border-radius: .2em; translate: .25em .2em; }
+  /* v6 judge label: smaller, beside the head (above it would cover the wall crest) */
+  #court.fix-v6 .avatar.front .label { font-size: calc(1cqw * var(--scale) * var(--jlab-k)); }
+  #court.fix-v6.judge-label-side .avatar.front .label { bottom: auto; top: var(--jlab-top); left: 100%; transform: none; margin: 0 0 0 var(--jlab-gap); }
   /* Same background on top of the judge, clipped to the image desk, so the desk hides the lower body */
   #deskClip, #closeupDeskClip { position: absolute; inset: 0; z-index: 30; pointer-events: none; }
   #closeupDeskClip { background: center / cover no-repeat; }
@@ -146,6 +163,9 @@
   #dialog[hidden] { display: none; }
   /* BALANCE_FIX_V3: shorter box on the top-view wide shot only (not over the judge close-up or a cut-in) */
   #stage.fix-v3:not(:has(#closeup.show, #cutin:not([hidden]))) #dialog { height: calc(var(--dlg-h) * var(--dlg-wide-k)); }
+  /* DOOR_DECOR_VISIBLE_UNDER_DIALOGUE: lighter fill over the door valance on the wide shot */
+  #stage.door-decor-dlg:not(:has(#closeup.show, #cutin:not([hidden]))) #dialog {
+    background: linear-gradient(90deg, var(--ui-panel) var(--dd-a), var(--ui-panel-light) var(--dd-a) var(--dd-b), var(--ui-panel) var(--dd-b)); }
   /* CHAT_HIDES_DIALOGUE_BOX: the dialogue box (stage-name lines included) fades out while the trial log is shown, back when it hides */
   #dialog { transition: opacity var(--dlg-fade), visibility 0s; }
   #stage.chat-hides-dlg #chat:not([hidden]) ~ #dialog { opacity: 0; visibility: hidden; transition: opacity var(--dlg-fade), visibility 0s var(--dlg-fade); }
@@ -262,6 +282,17 @@
   .msg.cur > span { background: var(--ps-hl-bg); border-left: 3px solid var(--ps-hl-border); }
   .msg.sys { opacity: 1; text-align: center; }
   .msg.sys > span { font-size: .87em; }
+  /* CHAT_READABILITY_V2: Korean wraps between words; darker solid bubbles; the current speaker highlighted; stronger blur */
+  #stage.chat-v2 :is(#msgs .msg, #dialog p, #casePanel p, #casePanel li) { word-break: keep-all; overflow-wrap: break-word; line-break: strict; }
+  #stage.chat-v2 #chat { backdrop-filter: blur(var(--chat-blur)); }
+  #stage.chat-v2 .msg { opacity: var(--cb-dim); line-height: 1.55; }
+  #stage.chat-v2 .msg > span { background: var(--cb-bg); border-color: var(--cb-border); color: var(--cb-text); font-weight: var(--cb-weight); }
+  #stage.chat-v2 .msg.cur, #stage.chat-v2 .msg.sys { opacity: 1; }
+  #stage.chat-v2 .msg.cur > span { background: var(--cb-active-bg); border-left: 3px solid var(--cb-active-border); }
+  /* Scene dim under the trial log (background, furniture, avatars, labels); the log, gauge and controls stay above it */
+  #stage.chat-v2 #court::after { content: ''; position: absolute; inset: 0; z-index: 148; pointer-events: none; opacity: 0;
+    background: rgba(0,0,0,var(--chat-dim)); transition: opacity var(--chat-dim-ms); }
+  #stage.chat-v2:has(#chat:not([hidden])) #court::after { opacity: 1; }
   #chatInput { margin: .35em 1em 0; font-size: calc(var(--chat-input) * 1cqw); padding: .2em .35em; background: var(--ps-input-bg); color: var(--ps-input-text);
                border: 1px solid var(--gold-base); text-shadow: var(--ps-shadow); }
   #chatInput::placeholder { color: var(--ps-input-ph); }
@@ -737,6 +768,32 @@ const WALK_SPEED = 30;   // % moved per second
 const MOUTH_MS = 150;
 const STEP_MS = 200;     // walk frame interval
 const AVATAR_SCALE = 2;  // overall scale for avatars, labels and icons
+// ----- Fix v6: jurors lower, prosecutor/defender (desk, chair, seat, props, plate) higher, judge plate on the desk top,
+// judge shown down to the shoulders/collar. Its values win over the v4/v5 positions while on; false = before -----
+const LAYOUT_FIX_V6 = true;
+const JUROR_SHIFT_Y_PCT_V6 = 4;          // v4 value (-5) + 9; capped so the front row's heads stay above the wide-shot dialogue box
+const JUROR_HEAD_ROWS = 7;               // back sprite rows of the head (kept visible)
+const JUDGE_ADVOCATE_SHIFT_Y_PCT = -9;   // prosecutor/defender block (and STAND_TARGET) up, % of stage height
+const JUDGE_AVATAR_RAISE_PCT = 3;        // judge sprite up (% of stage height): shoulders and the collar top clear the desk
+const JUDGE_DESK_CLIP_V6 = { x: 43, y: 20.9, w: 14, h: 7.1 }; // desk part redrawn over the judge: front edge down (bg-top)
+const JUDGE_NAMEPLATE = { xPct: 50, yPct: 21.2, widthPct: 6, fontCqw: 8 / 4.5 * 0.5 }; // on the desk top's front edge; 75% wide, old text size
+const JUDGE_LABEL_V6 = { scale: 0.85, placement: 'side', topPct: 18, gapPx: 6 }; // 'side' = right of the head | 'above'
+// ----- Fix v7: juror block raised so the gold valance over the entrance door (bg-top) shows below the front bench.
+// Replaces JUROR_SHIFT_Y_PCT_V6 while on; false = the v6 position -----
+const JUROR_RAISE_V7 = true;
+const DOOR_DECOR_TOP_PCT = 79.9;        // top edge of the valance in bg-top (% of the image height)
+const DOOR_DECOR_CLEARANCE_PCT = 1.2;   // front bench bottom (plinth included) this far above it
+const JUROR_CLEAR_PX = 8;               // the back row (labels included) keeps this gap from the desks, speaking spots and dais
+const JUROR_LABEL_RESERVE_PCT = 4;      // room above a back-row head for its stacked label (% of stage height)
+// true: on the top-view wide shot the dialogue box fill is lighter over the door valance (center widthPct of the box)
+const DOOR_DECOR_VISIBLE_UNDER_DIALOGUE = false;
+const DOOR_DECOR_DIALOGUE = { widthPct: 30, opacityScale: 0.5 };
+// ----- Fix v5: speaking spot on the open carpet between the desks and the judge dais (replaces STAND_OFFSET); false = before -----
+const STAND_FIX_V5 = true;
+const STAND_TARGET = { prosecutor: { xPct: 33, footYPct: 44 }, defender: { xPct: 67, footYPct: 44 } }; // standing feet, % of the stage
+const STAND_AVOID_JURORS = true;  // push the spot up while the standing avatar (+ label) overlaps a juror / juror label or the dais
+const STAND_AVOID = { minOverlapPx: 8, stepPct: 1, maxPct: 6 };
+const STAND_DAIS_RECT = { x: 37, y: 18, w: 26, h: 13 }; // judge dais front in the top view (% of the image)
 const STAND_OFFSET = 15; // how far (%) the prosecutor/defender steps toward the center to speak, so they stand in the open space past the vertical desk (width 5.5)
 // Trial log window: size in % of container, text in cqw of the window itself; centered in the scene above the dialog box
 // topPct = top edge (was centered at 60 high: 6.5); the window grows downward only
@@ -824,19 +881,36 @@ const JUROR_SHIFT_Y_PCT = -7;     // front row moves up this far (% of stage hei
 const JUROR_ROW_GAP_PCT = 0;      // back bench bottom sits this far above the front bench top
 const JUROR_CENTER_X = 50;        // rows scale toward this x
 const JUROR_LABEL_LAYOUT = 'stacked'; // 'stacked' ('배심원' small over the nickname) | 'inline' (v2 one line)
+// ----- Fix v4: lower, wider desks; two clearly separated juror rows seated behind their benches; smaller prosecutor/defender.
+// Its values replace the v2/v3 ones of the same name while on; false = the v3 layout -----
+const FURNITURE_FIX_V4 = true;
+const FURNITURE_PERSPECTIVE_STRENGTH_V4 = 0.16; // ~40% of v2/v3 (0.4): a desk's far end ~4.5% narrower
+const DESK_V4 = { topWidthPx: 94.7, topLengthPx: 185.9, sideDepthPx: 11.5, frontHeightPx: 7 }; // top 150% wide (v3 63.1), same length; faces ~70%
+const DESK_AVATAR_GAP_PX_V4 = 2;
+const PROPS_INSET_PX_V4 = 8;
+// Nameplate standing at the front (camera) end of the top on a small base; acrossPct = center from the top's outer (seat) edge
+const NAMEPLATE_V4 = { acrossPct: 55, standPx: 3 };
+const ADVOCATE_SCALE = 0.85;      // prosecutor/defender sprite; their chairs and reactions (fireworks, balloons) follow
+const ADVOCATE_LABEL_GAP_PX = 4;  // label above the head
+const JUROR_ROW_GAP_PCT_V4 = 11;  // back bench top above the front bench top (% of stage height)
+const JUROR_BACK_BENCH_SCALE = 0.8; // back bench length/height vs the front bench
+const JUROR_TORSO_ROWS = [8, 15];   // back sprite rows from the shoulders to the seat
+const JUROR_TORSO_HIDDEN_PCT = 40;  // lower part of each juror's torso behind their own bench rail
+const JUROR_OVERLAP_PCT = 20;       // max share of a back-row juror hidden by the front bench (the row rises if more)
+const JUROR_SHIFT_Y_PCT_V4 = -5;    // front bench top moves up this far from its original y (clears the wide-shot dialogue box)
 const JUROR_LABEL_V3 = { fontScale: 0.52, roleScale: '0.72em', padding: '.1em .45em', bgOpacity: 0.45, gapPx: 2, zigzagPx: 10 }; // gap + zigzag <= 12px above the head
 // v2/v3: prop sizes stay as in DESK (old top); v2/v3 = center in % of that version's top, clear of the seated avatar's head/arms
 const DESK_PROPS = {
   prosecutor: [
-    { type: 'pile', x: 12, y: 9,  w: 72, h: 28, rot: -2, sheets: 7, lines: 5, clip: true, tab: true, v2: [36, 76], v3: [61, 15] }, // thick pile
-    { type: 'pile', x: 16, y: 56, w: 62, h: 22, rot: 3,  sheets: 3, lines: 3, folder: true, v2: [44, 42], v3: [33, 71] },          // thin pile on a folder
+    { type: 'pile', x: 12, y: 9,  w: 72, h: 28, rot: -2, sheets: 7, lines: 5, clip: true, tab: true, v2: [36, 76], v3: [61, 15], v4: [60, 17] }, // thick pile
+    { type: 'pile', x: 16, y: 56, w: 62, h: 22, rot: 3,  sheets: 3, lines: 3, folder: true, v2: [44, 42], v3: [33, 71], v4: [24, 73] },          // thin pile on a folder
   ],
   defender: [
-    { type: 'paper',  x: 22, y: 6,  w: 58, h: 20, rot: -5, lines: 4, v2: [42, 40], v3: [67, 67] },
-    { type: 'laptop', x: 24, y: 32, w: 66, h: 30, rot: -3, v2: [56, 72], v3: [38, 16] }, // keyboard toward the defender, lid back toward the center
-    { type: 'note',   x: 14, y: 66, w: 40, h: 13, rot: 6, v2: [30, 58], v3: [52, 32] },
-    { type: 'pen',    x: 62, y: 65, w: 8,  h: 16, rot: 14, v2: [70, 56], v3: [57, 91] },
-    { type: 'paper',  x: 30, y: 83, w: 56, h: 13, rot: 4, lines: 3, v2: [42, 93], v3: [67, 81] },
+    { type: 'paper',  x: 22, y: 6,  w: 58, h: 20, rot: -5, lines: 4, v2: [42, 40], v3: [67, 67], v4: [74, 67] },
+    { type: 'laptop', x: 24, y: 32, w: 66, h: 30, rot: -3, v2: [56, 72], v3: [38, 16], v4: [30, 17] }, // keyboard toward the defender, lid back toward the center
+    { type: 'note',   x: 14, y: 66, w: 40, h: 13, rot: 6, v2: [30, 58], v3: [52, 32], v4: [55, 12] },
+    { type: 'pen',    x: 62, y: 65, w: 8,  h: 16, rot: 14, v2: [70, 56], v3: [57, 91], v4: [20, 70] },
+    { type: 'paper',  x: 30, y: 83, w: 56, h: 13, rot: 4, lines: 3, v2: [42, 93], v3: [67, 81], v4: [74, 85] },
   ],
 };
 // Nameplates (plate is 4.5:1). x, y = center (% of image), w = plate width (% of container width),
@@ -945,6 +1019,13 @@ const REACTION = {
 const OPENING_MS = 4000;
 const JUROR_MS = 3000;
 const CHAT_VISIBLE_MESSAGES = 6;  // trial log keeps this many messages, stacked top to bottom; older ones scroll up out of view
+// ----- Trial log readability v2 (false = before). Font sizes unchanged; PANEL_STYLE.bgOpacity unchanged -----
+const CHAT_READABILITY_V2 = true;
+const CHAT_BUBBLE = { bg: 'rgba(22,17,15,0.86)', border: 'rgba(245,236,215,0.18)', textColor: '#FFF7E6', weight: 500,
+                      activeBg: 'rgba(66,52,28,0.92)', activeBorder: '#F0B24A', dimmedOpacity: 0.82 };
+const CHAT_BLUR_PX = 8;
+const CHAT_BACKDROP_DIM = 0.38;     // dark layer over the scene while the trial log shows
+const CHAT_BACKDROP_FADE_MS = 250;
 const CHAT_MESSAGE_GAP_CQW = 1.2; // space between messages, cqw of the chat window
 // Stage 0 logo (logo.png) before the role cards: fades in and waits for a click, then shrinks out and the cards appear
 const LOGO_INTRO_ENABLED = true;
@@ -983,6 +1064,23 @@ const TRAILER_POPUP_NEW_COLOR = '#C0262E';
 const TRAILER_COLORS = { wallTop: '#4a1c22', wallBottom: '#2a1214', floorTop: '#3a2116', floorBottom: '#1a0d08', chair: '#2a1a12',
                          table: '#7a4a2a', tableDark: '#4a2a16', pack: '#F08A24', packEdge: '#5a2a08', band: '#6B1A26' };
 // h hair, s skin, E eyes, c clothes, A accent (collar/tie)
+// Character sprites v2 (judge: woman in her 50s, silver bob + round glasses; prosecutor: wine suit + square glasses;
+// defender: honey-blond waves + pink jacket). Same 12px grid, anchors and poses; false = the old sprites (SPRITES/PALETTES)
+const AVATAR_V2 = true;
+const AVATAR_PALETTE = {
+  judge:      { hair: '#A8A4AC', hairShade: '#7C7882', skin: '#f1c9a0', eye: '#222', robe: '#2B2024', collar: '#F4EEE8', pin: '#D4AF37',
+                glasses: '#4A3F3A', legs: '#1F181B' },
+  prosecutor: { hair: '#5A3A2A', hairShade: '#3E271C', skin: '#f1c9a0', eye: '#222', suit: '#8E2A3A', vest: '#6B1F2C', shirt: '#F4EEE8',
+                tie: '#1E1A1C', pin: '#D4AF37', glasses: '#8C8F94', legs: '#3E1C24' },
+  defender:   { hair: '#D9A94F', hairShade: '#B8862F', skin: '#f1c9a0', eye: '#222', jacket: '#E4578C', jacketShade: '#BD3E6F',
+                button: '#D4AF37', blouse: '#F7F1EA', clip: '#E4578C', pearl: '#F5F0EA', legs: '#4A3A40' },
+};
+// Pixel letters in AVATAR_LAYERS -> AVATAR_PALETTE keys (s skin and E eye are shared)
+const AVATAR_LEGEND = {
+  judge:      { H: 'hair', h: 'hairShade', g: 'glasses', R: 'robe', W: 'collar', P: 'pin' },
+  prosecutor: { H: 'hair', h: 'hairShade', g: 'glasses', J: 'suit', V: 'vest', W: 'shirt', T: 'tie', P: 'pin' },
+  defender:   { H: 'hair', h: 'hairShade', J: 'jacket', j: 'jacketShade', B: 'button', W: 'blouse', K: 'clip', O: 'pearl' },
+};
 const PALETTES = {
   judge:      { c: '#1a1a1a', A: '#eeeeee', p: '#111111' },
   prosecutor: { c: '#2b3a67', A: '#c0392b', p: '#1f2a4a' },
@@ -1064,12 +1162,52 @@ const SPRITES = {
   ],
 };
 const MOUTH = { front: [5, 6], side: [8, 5], seated: [5, 6] }; // back view has no mouth
+// AVATAR_V2 sprites: layers painted in AVATAR_LAYER_ORDER over the same 12-wide grid as SPRITES (same rows, so legs, arms,
+// mouth and kneel/fist from spriteSVG land where they did). Rows not listed are empty; '.' = transparent
+const AVATAR_LAYER_ORDER = ['body', 'hair', 'glasses', 'props'];
+const JUDGE_HEAD_V2 = {
+  hair: ['...HHHHHH...', '..HHHHHHHH..', '.HHhHHHHHHH.', '.HH......HH.', '.HH......HH.', '.HH......HH.', '.HH......HH.',
+         '.HHH....HHH.', '.hHHH..HHHh.', '.h........h.'], // silver bob, side part, down to the shoulders
+  glasses: ['', '', '', '...g.gg.g...', '...g....g...', '....g..g....'], // round rims around the eyes, bridge across the top
+};
+const JUDGE_FACE_V2 = ['............', '............', '............', '...ssssss...', '...sEssEs...', '...ssssss...', '...ssssss...',
+                       '....ssss....', '.....ss.....', '..RRWWWWRR..', '.RRRRWWRRRR.']; // face, neck, V collar
+const AVATAR_LAYERS = {
+  judge: {
+    front: { ...JUDGE_HEAD_V2, body: [...JUDGE_FACE_V2, '.RRRRRRRRRR.', '.RRRRRRRRRR.', '.sRRRRRRRRs.', '..RRRRRRRR..'],
+             props: [...Array(11).fill(''), '........P...'] }, // gold pin on the chest
+    seated: { ...JUDGE_HEAD_V2, body: [...JUDGE_FACE_V2, ...Array(7).fill('.RRRRRRRRRR.')], props: [...Array(11).fill(''), '........P...'] },
+  },
+  prosecutor: { side: { // facing right
+    body: ['', '', '.....sssss..', '....ssssEs..', '....sssssss.', '....ssssss..', '.....sssss..', '.....ss.....',
+           '....JJWW....', '...JJJVWJ...', '...JJJVWJ...', '...JJJVVJ...', '...JJJJJs...', '...JJJJJ....'], // wine jacket, darker vest, shirt
+    hair: ['....HHHH....', '...HHHHHhH..', '...hH...H...', '...h........', '...h........'], // swept back, forehead wave, one strand
+    glasses: ['', '', '', '......g..g..'],                    // temple arm, rim in front of the eye
+    props: ['', '', '', '', '', '', '', '', '', '.......T....', '.......TP...'], // thin black tie, lapel pin
+  } },
+  defender: { side: { // drawn facing right, mirrored to face left
+    body: ['', '', '.........s..', '.....sssEs..', '.....ssssss.', '.....sssss..', '.....sssss..', '.....ss.....',
+           '....JJWW....', '....JJWWJ...', '....JJJWJ...', '...JJJJJJ...', '...JJJJJs...', '...jJJJJ....'], // pink jacket, bow collar
+    hair: ['....HHHHH...', '...HHHHHHH..', '..HHHHHHH...', '..HHH.......', '..HHH.......', '..HHH.......', '..HHH.......',
+           '..HhH.......', '..hH........', '..Hh........', '..hH........', '..h.........'], // side-swept bangs, waves past the shoulder
+    props: ['', '.....K......', '', '', '', '....O.......', '', '', '', '', '........B...', '.......B....'], // hair clip, pearl, brooch, button
+  } },
+};
+function avatarRows(layers, n) {
+  const rows = Array.from({ length: n }, () => [...'............']);
+  AVATAR_LAYER_ORDER.forEach(k => (layers[k] ?? []).forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== '.' && rows[y]) rows[y][x] = ch; })));
+  return rows.map(r => r.join(''));
+}
 
-function spriteSVG(view, pal, mirror) {
-  const colors = { h: '#3b2a20', s: '#f1c9a0', E: '#222', p: '#444a55', ...pal };
+// role: 'judge' | 'prosecutor' | 'defender' uses the AVATAR_V2 layers when there are some for the view (trailer extras pass none)
+function spriteSVG(view, pal, mirror, role) {
+  const v2 = AVATAR_V2 && AVATAR_LAYERS[role]?.[view], P = AVATAR_PALETTE[role];
+  const colors = v2 ? { s: P.skin, E: P.eye, p: P.legs, c: P.robe ?? P.suit ?? P.jacket,
+                        ...Object.fromEntries(Object.entries(AVATAR_LEGEND[role]).map(([ch, key]) => [ch, P[key]])) }
+                    : { h: '#3b2a20', s: '#f1c9a0', E: '#222', p: '#444a55', ...pal };
   const r = (x, y, w, h, fill, cls = '') => `<rect class="${cls}" x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"/>`;
   let body = '';
-  SPRITES[view].forEach((row, y) => [...row].forEach((ch, x) => {
+  (v2 ? avatarRows(v2, SPRITES[view].length) : SPRITES[view]).forEach((row, y) => [...row].forEach((ch, x) => {
     if (colors[ch]) body += r(x, y, 1, 1, colors[ch]);
   }));
   const p = colors.p;
@@ -1092,7 +1230,7 @@ function makeAvatar(a, view = a.color ? 'back' : a.id === 'judge' ? 'front' : 's
   el.dataset.view = view;
   el.className = 'avatar ' + view;
   const pal = a.color ? { c: a.color, A: a.color } : PALETTES[a.id];
-  el.innerHTML = spriteSVG(view, pal, a.id === 'defender') + `<span class="label">${a.label}<i class="dots">...</i><i class="mark"></i></span>`;
+  el.innerHTML = spriteSVG(view, pal, a.id === 'defender', a.id) + `<span class="label">${a.label}<i class="dots">...</i><i class="mark"></i></span>`;
   el.firstChild.style.zIndex = Math.round(a.y); // lower seats are in front
   return el;
 }
@@ -1349,11 +1487,29 @@ function tintFurniture(img) {
 // ----- Fix v2 desks (FURNITURE_FIX_V2 + solid3d) -----
 const DESK_FIX = FURNITURE_FIX_V2 && FURNITURE_STYLE === 'solid3d';
 const BALANCE_FIX = BALANCE_FIX_V3 && DESK_FIX;
-// v2/v3 desk box in % of the stage: outer edge kept; v3 scales the top by DESK.scale around the old length center
+const FIX4 = FURNITURE_FIX_V4 && BALANCE_FIX;
+const FIX6 = LAYOUT_FIX_V6 && FIX4;
+if (FIX6) {
+  // Prosecutor/defender block up; their nameplates follow the desk boxes later
+  PROPS.filter(p => p.role || p.cls.startsWith('chair')).forEach(p => p.y += JUDGE_ADVOCATE_SHIFT_Y_PCT);
+  AVATARS.filter(a => a.id === 'prosecutor' || a.id === 'defender').forEach(a => a.y += JUDGE_ADVOCATE_SHIFT_Y_PCT);
+  AVATARS.find(a => a.id === 'judge').y -= JUDGE_AVATAR_RAISE_PCT;
+  // Layering follows the seat row (avatar z = its y): chairs stay just under the seated advocate, desks too while at the seat
+  PROPS.filter(p => p.cls.startsWith('chair')).forEach(p => p.z += JUDGE_ADVOCATE_SHIFT_Y_PCT);
+  court.style.setProperty('--seat-desk-z', 51 + JUDGE_ADVOCATE_SHIFT_Y_PCT);
+  Object.assign(NAMEPLATES.find(n => n.scene === 'court' && n.role === 'judge'),
+                { x: JUDGE_NAMEPLATE.xPct, y: JUDGE_NAMEPLATE.yPct, w: JUDGE_NAMEPLATE.widthPct, font: JUDGE_NAMEPLATE.fontCqw, stand: true });
+}
+if (FIX4) FURNITURE_PERSPECTIVE.strength = FURNITURE_PERSPECTIVE_STRENGTH_V4;
+const PROPS_INSET = FIX4 ? PROPS_INSET_PX_V4 : PROPS_INSET_PX;
+// Desk faces (ref px) of the active version
+const DESK_FACES = FIX4 ? DESK_V4 : DESK_V2;
+// v2/v3/v4 desk box in % of the stage: outer edge kept; v3 scales the top by DESK.scale, v4 sets it, around the old length center
 function deskBox(p) {
   const k = BALANCE_FIX ? DESK.scale : 1, u = FURNITURE_REF_WIDTH_PX / 100;
-  const tw = DESK_V2.topWidthPx * k, th = (DESK.lengthPct * u / ASPECT_RATIO - DESK_V2.frontHeightPx) * k;
-  const w = (tw + DESK_V2.sideDepthPx) / u, h = (th + DESK_V2.frontHeightPx) * ASPECT_RATIO / u;
+  const tw = FIX4 ? DESK_V4.topWidthPx : DESK_V2.topWidthPx * k;
+  const th = FIX4 ? DESK_V4.topLengthPx : (DESK.lengthPct * u / ASPECT_RATIO - DESK_V2.frontHeightPx) * k;
+  const w = (tw + DESK_FACES.sideDepthPx) / u, h = (th + DESK_FACES.frontHeightPx) * ASPECT_RATIO / u;
   return { x: / r$/.test(p.cls) ? p.x + p.w - w : p.x, y: p.y + (DESK.lengthPct - h) / 2, w, h };
 }
 // Screen x (% of stage) pulled toward the vanishing point: rows above a desk's bottom edge yBot narrow toward vanishX
@@ -1363,7 +1519,7 @@ function perspX(X, Y, yBot) {
 }
 // Same box model as deskSVG (top + faces swept by (s, f)), each corner then put in perspective; box = the element in % of the stage
 function deskSVG2(W, H, mirror, role, box) {
-  const D = DESK_V2, s = D.sideDepthPx, f = D.frontHeightPx, tw = W - s, th = H - f, m = D.moldingPx, b = 1 - D.basePct / 100;
+  const D = DESK_V2, s = DESK_FACES.sideDepthPx, f = DESK_FACES.frontHeightPx, tw = W - s, th = H - f, m = D.moldingPx, b = 1 - D.basePct / 100;
   const kx = 100 / FURNITURE_REF_WIDTH_PX, ky = kx * ASPECT_RATIO, yBot = box.y + box.h;
   const persp = ([x, y]) => [(perspX(box.x + x * kx, box.y + y * ky, yBot) - box.x) / kx, y]; // screen-local px
   const pt = ([x, y]) => persp([mirror ? W - x : x, y]);                                       // prosecutor-oriented px
@@ -1388,33 +1544,47 @@ function deskSVG2(W, H, mirror, role, box) {
   const ow = DESK.widthPct * FURNITURE_REF_WIDTH_PX / 100 - DESK.sideDepthPx, oh = DESK.lengthPct * FURNITURE_REF_WIDTH_PX / 100 / ASPECT_RATIO - DESK.frontHeightPx;
   const x0 = mirror ? s : 0; // the top's left edge, screen-local
   const props = PROPS_ENABLED ? (DESK_PROPS[role] ?? []).map(it => {
-    const [u, v] = BALANCE_FIX ? it.v3 : it.v2, w = it.w / 100 * ow, h = it.h / 100 * oh;
+    const [u, v] = FIX4 ? it.v4 : BALANCE_FIX ? it.v3 : it.v2, w = it.w / 100 * ow, h = it.h / 100 * oh;
     let cx = x0 + u / 100 * tw, cy = v / 100 * th;
-    if (BALANCE_FIX) { // whole prop (rotated box + sheet jitter / laptop lid) at least PROPS_INSET_PX inside the top
+    if (BALANCE_FIX) { // whole prop (rotated box + sheet jitter / laptop lid) at least PROPS_INSET inside the top
       const r = (it.rot ?? 0) * Math.PI / 180, c = Math.abs(Math.cos(r)), sn = Math.abs(Math.sin(r));
-      const pad = PROPS_INSET_PX + (it.type === 'pile' ? 3 : it.type === 'laptop' ? LAPTOP.lidPx : 0);
+      const pad = PROPS_INSET + (it.type === 'pile' ? 3 : it.type === 'laptop' ? LAPTOP.lidPx : 0);
       const hx = (w * c + h * sn) / 2 + pad, hy = (w * sn + h * c) / 2 + pad, drop = it.type === 'pile' ? (it.sheets - 1) * PILE_LAYER_PX : 0;
       cx = Math.min(Math.max(cx, x0 + hx), x0 + tw - hx);
       cy = Math.min(Math.max(cy, hy), th - hy - drop);
     }
     return propSVG(it, w, h, ...persp([cx, cy]));
   }).join('') : '';
-  if (BALANCE_FIX) { // nameplate on the top's inner side, tilted like the desk's long edges
+  let stand = '';
+  if (BALANCE_FIX) { // v3: nameplate on the top's inner side, tilted like the desk's long edges; v4: standing at the front end, upright
     const np = NAMEPLATES.find(n => n.scene === 'court' && n.role === role), P = FURNITURE_PERSPECTIVE;
-    const thick = np.h * FURNITURE_REF_WIDTH_PX / 100, len = np.w * FURNITURE_REF_WIDTH_PX / 100, ins = PROPS_INSET_PX;
-    const [lx, ly] = persp([mirror ? x0 + ins + thick / 2 : tw - ins - thick / 2,
-                            Math.min(Math.max(NAMEPLATE_V3.alongPct / 100 * th, ins + len / 2), th - ins - len / 2)]);
+    const thick = np.h * FURNITURE_REF_WIDTH_PX / 100, len = np.w * FURNITURE_REF_WIDTH_PX / 100, ins = PROPS_INSET;
+    const across = FIX4 ? NAMEPLATE_V4.acrossPct / 100 * tw : tw - ins - thick / 2; // from the outer edge
+    const cx = Math.min(Math.max(mirror ? x0 + tw - across : x0 + across, x0 + ins + thick / 2), x0 + tw - ins - thick / 2);
+    const cy = FIX4 ? th - ins - len / 2 : Math.min(Math.max(NAMEPLATE_V3.alongPct / 100 * th, ins + len / 2), th - ins - len / 2);
+    const [lx, ly] = persp([cx, cy]);
     np.x = box.x + lx * kx;
     np.y = box.y + ly * ky;
-    const slope = (np.x - P.vanishXPct) * P.strength / (yBot - P.vanishYPct); // dX/dY (% / %) along the long edges
-    NAMEPLATE_ROTATION[role] += Math.atan(-slope * ASPECT_RATIO) * 180 / Math.PI;
+    if (FIX4) { // small dark base peeking out below the plate (toward the camera), with its floor shadow
+      const sp = NAMEPLATE_V4.standPx;
+      stand = fRect('shadow', lx - thick / 2 + PROP_SHADOW.dx, ly - len / 2 + sp + PROP_SHADOW.dy, thick, len)
+            + fRect('frontDark', lx - thick / 2 - 1, ly - len / 2 + sp, thick + 2, len);
+    } else {
+      const slope = (np.x - P.vanishXPct) * P.strength / (yBot - P.vanishYPct); // dX/dY (% / %) along the long edges
+      NAMEPLATE_ROTATION[role] += Math.atan(-slope * ASPECT_RATIO) * 180 / Math.PI;
+    }
   }
-  return `<svg viewBox="0 0 ${fNum(W)} ${fNum(H)}">${body}${props}</svg>`;
+  return `<svg viewBox="0 0 ${fNum(W)} ${fNum(H)}">${body}${stand}${props}</svg>`;
 }
 if (DESK_FIX) {
   // Move each chair + seat toward its desk until the gap at seat height is DESK_AVATAR_GAP_PX (defender mirrored)
   const desk = PROPS.find(p => p.role === 'prosecutor'), chair = PROPS.find(p => p.cls === 'chair'), seat = AVATARS.find(a => a.id === 'prosecutor');
-  const db = deskBox(desk), gap = BALANCE_FIX ? DESK_AVATAR_GAP_PX_V3 : DESK_AVATAR_GAP_PX;
+  if (FIX4) [[chair, seat], [PROPS.find(p => p.cls === 'chair r'), AVATARS.find(a => a.id === 'defender')]].forEach(([c, a]) => {
+    // v4: chair shrinks with the avatar (ADVOCATE_SCALE) around the seat point, drawn at its old size
+    c.base = { w: c.w, h: c.h };
+    Object.assign(c, { x: a.x + (c.x - a.x) * ADVOCATE_SCALE, y: a.y + (c.y - a.y) * ADVOCATE_SCALE, w: c.w * ADVOCATE_SCALE, h: c.h * ADVOCATE_SCALE });
+  });
+  const db = deskBox(desk), gap = FIX4 ? DESK_AVATAR_GAP_PX_V4 : BALANCE_FIX ? DESK_AVATAR_GAP_PX_V3 : DESK_AVATAR_GAP_PX;
   const shift = perspX(db.x, seat.y, db.y + db.h) - gap * 100 / FURNITURE_REF_WIDTH_PX - (chair.x + chair.w);
   [[chair, seat, 1], [PROPS.find(p => p.cls === 'chair r'), AVATARS.find(a => a.id === 'defender'), -1]]
     .forEach(([c, a, dir]) => { c.x += shift * dir; a.x += shift * dir; });
@@ -1434,14 +1604,54 @@ if (BALANCE_FIX) {
   };
   const kf = JUROR_GROUP_SCALE * JUROR_ROW_SCALE.front, kb = JUROR_GROUP_SCALE * JUROR_ROW_SCALE.back;
   const [yb, yf] = ys, [bb, bf] = benches, backBottom = bb.y + bb.h - yb;
-  rowMove(yf, kf, yf + JUROR_SHIFT_Y_PCT, bf);
-  rowMove(yb, kb, bf.y - JUROR_ROW_GAP_PCT - backBottom * kb, bb);
+  if (!FIX4) {
+    rowMove(yf, kf, yf + JUROR_SHIFT_Y_PCT, bf);
+    rowMove(yb, kb, bf.y - JUROR_ROW_GAP_PCT - backBottom * kb, bb);
+  } else {
+    // v4: front bench up; back bench JUROR_ROW_GAP_PCT_V4 above it at JUROR_BACK_BENCH_SCALE size. Each juror sits so the lower
+    // JUROR_TORSO_HIDDEN_PCT of the torso is behind their own rail; back seats centered between front seats
+    const wH = k => 4 * AVATAR_SCALE * k * ASPECT_RATIO;          // seated sprite: top = feet y - wH, one row = wH / 12
+    const [t0, t1] = JUROR_TORSO_ROWS, railRow = t0 + (t1 - t0) * (1 - JUROR_TORSO_HIDDEN_PCT / 100);
+    const feetFor = (rail, k) => rail + wH(k) * (1 - railRow / 12);
+    const front = jurors.filter(a => a.y === yf).sort((a, b) => a.x - b.x), back = jurors.filter(a => a.y === yb).sort((a, b) => a.x - b.x);
+    bf.base = { w: bf.w, h: bf.h };
+    // v6: lower, but the front row's heads stay above the wide-shot dialogue box
+    const dlgTop = 100 - DIALOGUE_BOX.bottom - DIALOGUE_BOX.height * DIALOGUE_BOX.wideHeightScale;
+    let shiftY = FIX6 ? Math.min(JUROR_SHIFT_Y_PCT_V6, dlgTop - wH(kf) * (JUROR_HEAD_ROWS - railRow) / 12 - bf.y) : JUROR_SHIFT_Y_PCT_V4;
+    if (JUROR_RAISE_V7) {
+      // v7: front bench bottom just above the door valance...
+      shiftY = DOOR_DECOR_TOP_PCT - DOOR_DECOR_CLEARANCE_PCT - bf.h * kf - bf.y;
+      // ...but no closer than JUROR_CLEAR_PX to the desks, speaking spots or dais above the back row (labels included)
+      const mx = JUROR_CLEAR_PX * 100 / (court.clientWidth || 1), my = JUROR_CLEAR_PX * 100 / (court.clientHeight || 1);
+      const bw = bf.w * kf * JUROR_BACK_BENCH_SCALE, x0 = JUROR_CENTER_X - bw / 2, x1 = JUROR_CENTER_X + bw / 2;
+      const backTop = sh => bf.y + sh - JUROR_ROW_GAP_PCT_V4 - wH(kb) * railRow / 12 - JUROR_LABEL_RESERVE_PCT;
+      const aw = 4 * AVATAR_SCALE * ADVOCATE_SCALE, ah = aw * 4 / 3 * ASPECT_RATIO, up = FIX6 ? JUDGE_ADVOCATE_SHIFT_Y_PCT : 0;
+      const blockers = [...PROPS.filter(q => q.role).map(deskBox), STAND_DAIS_RECT,
+        ...Object.values(STAND_TARGET).map(t => ({ x: t.xPct - aw / 2, y: t.footYPct + up - ah - JUROR_LABEL_RESERVE_PCT, w: aw, h: ah + JUROR_LABEL_RESERVE_PCT }))];
+      blockers.filter(b => b.x - mx < x1 && b.x + b.w + mx > x0)
+              .forEach(b => shiftY = Math.max(shiftY, shiftY + b.y + b.h + my - backTop(shiftY)));
+    }
+    Object.assign(bf, { x: JUROR_CENTER_X + (bf.x - JUROR_CENTER_X) * kf, y: bf.y + shiftY, w: bf.w * kf, h: bf.h * kf });
+    front.forEach(a => Object.assign(a, { x: JUROR_CENTER_X + (a.x - JUROR_CENTER_X) * kf, y: feetFor(bf.y, kf), jscale: kf }));
+    bb.base = bf.base; // same shape as the front bench (its own seat count), smaller
+    const bw = bf.w * JUROR_BACK_BENCH_SCALE, bh = bf.h * JUROR_BACK_BENCH_SCALE;
+    Object.assign(bb, { x: JUROR_CENTER_X - bw / 2, y: bf.y - JUROR_ROW_GAP_PCT_V4, w: bw, h: bh });
+    bb.z = Math.round(bb.y + bb.h);
+    // Feet y; then raised if the front bench would hide more than JUROR_OVERLAP_PCT of the visible sprite (rows 0..t1-1)
+    const vis = wH(kb) * t1 / 12, yBack = Math.min(feetFor(bb.y, kb), bf.y + vis * JUROR_OVERLAP_PCT / 100 + wH(kb) - vis);
+    back.forEach((a, i) => Object.assign(a, { x: (front[i].x + front[i + 1].x) / 2, y: yBack, jscale: kb }));
+  }
   court.classList.add('fix-v3');
   court.classList.toggle('jl-stacked', JUROR_LABEL_LAYOUT === 'stacked');
   stage.classList.add('fix-v3');
   stage.style.setProperty('--dlg-wide-k', DIALOGUE_BOX.wideHeightScale);
   [['--jl3-k', JUROR_LABEL_V3.fontScale], ['--jl3-role', JUROR_LABEL_V3.roleScale], ['--jl3-pad', JUROR_LABEL_V3.padding],
    ['--jl3-bg', JUROR_LABEL_V3.bgOpacity], ['--jl3-gap', JUROR_LABEL_V3.gapPx + 'px']].forEach(([k, v]) => court.style.setProperty(k, v));
+}
+if (FIX4) {
+  court.classList.add('fix-v4');
+  court.style.setProperty('--ascale', ADVOCATE_SCALE);
+  court.style.setProperty('--adv-label-gap', ADVOCATE_LABEL_GAP_PX + 'px');
 }
 if (FURNITURE_FIX_V2) {
   court.classList.add('fix-v2');
@@ -1463,8 +1673,8 @@ PROPS.forEach(p => {
       : p.cls.startsWith('chair') ? chairSVG(W, H, mirror) : benchSVG(W, H, p.seats ?? 1);
   }
   court.appendChild(d);
-  if (DESK_FIX && isDesk) { // leg cover for the seated avatar: same desk without its floor shadow, clipped below the seat
-    d.dataset.role = p.role;
+  if (DESK_FIX && isDesk) d.dataset.role = p.role;
+  if (DESK_FIX && isDesk && !FIX4) { // leg cover for the seated avatar: same desk without its floor shadow, clipped below the seat
     const legs = d.cloneNode(true), t = (AVATARS.find(a => a.id === p.role).y + DESK_SEAT_LEG_CLIP_PCT - box.y) / box.h * 100;
     legs.classList.add('desk-legs');
     legs.querySelector('.gshadow').remove();
@@ -1473,13 +1683,32 @@ PROPS.forEach(p => {
   }
 });
 const clipInset = r => `inset(${r.y}% ${100 - r.x - r.w}% ${100 - r.y - r.h}% ${r.x}%)`;
+if (DOOR_DECOR_VISIBLE_UNDER_DIALOGUE) {
+  const D = DOOR_DECOR_DIALOGUE;
+  stage.classList.add('door-decor-dlg');
+  [['--dd-a', 50 - D.widthPct / 2 + '%'], ['--dd-b', 50 + D.widthPct / 2 + '%'],
+   ['--ui-panel-light', UI_PALETTE.panelDark.replace(/[\d.]+\)$/, a => parseFloat(a) * D.opacityScale + ')')]].forEach(([k, v]) => stage.style.setProperty(k, v));
+}
 const deskClip = Object.assign(document.createElement('div'), { id: 'deskClip' });
-deskClip.style.clipPath = clipInset(DESK_CLIP);
+deskClip.style.clipPath = clipInset(FIX6 ? JUDGE_DESK_CLIP_V6 : DESK_CLIP);
+if (FIX6) {
+  court.classList.add('fix-v6');
+  court.classList.toggle('judge-label-side', JUDGE_LABEL_V6.placement === 'side');
+  [['--jlab-k', JUDGE_LABEL_V6.scale], ['--jlab-top', JUDGE_LABEL_V6.topPct + '%'], ['--jlab-gap', JUDGE_LABEL_V6.gapPx + 'px']]
+    .forEach(([k, v]) => court.style.setProperty(k, v));
+}
 court.appendChild(deskClip);
 
 const els = {};
 AVATARS.forEach(a => court.appendChild(els[a.id] = makeAvatar(a)));
 AVATARS.forEach(a => a.jscale && els[a.id].style.setProperty('--jscale', a.jscale));
+if (FIX4) PROPS.filter(p => p.role).forEach(p => { // v4 leg clip: hide sprite rows from the seat down where they lie over the desk
+  const a = AVATARS.find(v => v.id === p.role), b = deskBox(p), right = / r$/.test(p.cls), w = 4 * AVATAR_SCALE * ADVOCATE_SCALE;
+  const Y = a.y + DESK_SEAT_LEG_CLIP_PCT, edge = perspX(right ? b.x + b.w : b.x, Y, b.y + b.h); // desk edge on the seat side
+  const e = ((edge - (a.x - w / 2)) / w * 100).toFixed(2), r = (100 * 13 / 16).toFixed(2);  // sprite row 13 = thighs
+  els[a.id].style.setProperty('--leg-clip', right ? `polygon(0 0, 100% 0, 100% 100%, ${e}% 100%, ${e}% ${r}%, 0 ${r}%)`
+                                                  : `polygon(0 0, 100% 0, 100% ${r}%, ${e}% ${r}%, ${e}% 100%, 0 100%)`);
+});
 if (BALANCE_FIX && JUROR_LABEL_LAYOUT === 'stacked') AVATARS.filter(a => a.color).forEach(a => {
   const [role, nick] = a.label.split(' / ');
   els[a.id].querySelector('.label').firstChild.replaceWith(
@@ -1503,6 +1732,46 @@ function layoutJurorLabels() {
 }
 document.fonts.ready.then(layoutJurorLabels);
 addEventListener('resize', layoutJurorLabels);
+if (CHAT_READABILITY_V2) {
+  const B = CHAT_BUBBLE;
+  stage.classList.add('chat-v2');
+  [['--cb-bg', B.bg], ['--cb-border', B.border], ['--cb-text', B.textColor], ['--cb-weight', B.weight], ['--cb-active-bg', B.activeBg],
+   ['--cb-active-border', B.activeBorder], ['--cb-dim', B.dimmedOpacity], ['--chat-blur', CHAT_BLUR_PX + 'px'],
+   ['--chat-dim', CHAT_BACKDROP_DIM], ['--chat-dim-ms', CHAT_BACKDROP_FADE_MS + 'ms']].forEach(([k, v]) => stage.style.setProperty(k, v));
+}
+// v5 speaking spot per advocate (feet, % of the stage). From STAND_TARGET, moved up STAND_AVOID.stepPct at a time (up to maxPct)
+// while the standing sprite or its label overlaps a seated juror, a juror label or the dais by minOverlapPx or more (px, current size)
+const standPos = {};
+function layoutStand() {
+  if (!STAND_FIX_V5) return;
+  const W = court.clientWidth, H = court.clientHeight, A = STAND_AVOID;
+  const sprite = (x, feetY, cqw, seated) => { // px rect of a sprite; seated sprites sit one width above the feet
+    const w = cqw * W / 100, h = w * 4 / 3, top = feetY * H / 100 - (seated ? w : h);
+    return { x: x * W / 100 - w / 2, y: top, w, h };
+  };
+  const labelOf = (el, r) => { // label box above a sprite, from its rendered size, margin and zigzag lift
+    const l = el.querySelector('.label'), cs = getComputedStyle(l), up = parseFloat(cs.marginBottom) + (parseFloat(cs.getPropertyValue('--jl-lift')) || 0);
+    return { x: r.x + r.w / 2 - l.offsetWidth / 2, y: r.y - up - l.offsetHeight, w: l.offsetWidth, h: l.offsetHeight };
+  };
+  const D = STAND_DAIS_RECT, blockers = [{ x: D.x * W / 100, y: D.y * H / 100, w: D.w * W / 100, h: D.h * H / 100 }];
+  AVATARS.filter(a => a.color).forEach(a => {
+    const r = sprite(a.x, a.y, 4 * AVATAR_SCALE * (a.jscale ?? 1), true);
+    blockers.push(r, labelOf(els[a.id], r));
+  });
+  const hit = (p, q) => Math.min(p.x + p.w, q.x + q.w) - Math.max(p.x, q.x) >= A.minOverlapPx && Math.min(p.y + p.h, q.y + q.h) - Math.max(p.y, q.y) >= A.minOverlapPx;
+  ['prosecutor', 'defender'].forEach(id => {
+    const t = STAND_TARGET[id], cqw = 4 * AVATAR_SCALE * (FIX4 ? ADVOCATE_SCALE : 1);
+    const blocked = y => { const r = sprite(t.xPct, y, cqw, false); return [r, labelOf(els[id], r)].some(q => blockers.some(b => hit(q, b))); };
+    const y0 = t.footYPct + (FIX6 ? JUDGE_ADVOCATE_SHIFT_Y_PCT : 0);
+    let y = y0;
+    if (STAND_AVOID_JURORS) for (let k = 0; k <= A.maxPct; k += A.stepPct) { y = y0 - k; if (!blocked(y)) break; }
+    standPos[id] = { x: t.xPct, y };
+  });
+}
+document.fonts.ready.then(layoutStand);
+addEventListener('resize', layoutStand);
+// Where an advocate steps out to (speaking, losing): the v5 spot, or STAND_OFFSET / kneelOffset toward the center
+const forthSpot = (id, offset) => STAND_FIX_V5 && standPos[id] ? standPos[id] : { x: seatOf(id).x + offset * STAND_DIR[id], y: seatOf(id).y };
 const closeJudge = makeAvatar(AVATARS[0], 'seated');
 closeup.appendChild(closeJudge);
 // marginTop 0: top is the head top, not the feet (the seated sprite is taller than 4:3)
@@ -1541,7 +1810,8 @@ NAMEPLATES.forEach(n => {
   el.append(tag('b'));
   el.firstChild.append(tag('span', NAMEPLATE_TEXT[n.role]));
   Object.assign(el.style, { left: n.x + '%', top: n.y + '%', width: (stacked ? h : n.w) + 'cqw',
-                            height: (stacked ? n.w : h) + 'cqw', fontSize: h * 0.5 + 'cqw' });
+                            height: (stacked ? n.w : h) + 'cqw', fontSize: (n.font ?? h * 0.5) + 'cqw' });
+  el.classList.toggle('stand', !!n.stand);
   if (rot !== undefined && !stacked) el.style.setProperty('--rot', rot + 'deg');
   (n.scene === 'closeup' ? closeup : court).append(el);
 });
@@ -1632,6 +1902,7 @@ function place(el, p) {
 async function walk(el, p, g) {
   const ms = Math.hypot(p.x - parseFloat(el.style.left), p.y - parseFloat(el.style.top)) / WALK_SPEED * 1000;
   el.classList.remove('out', 'sit');
+  el.classList.add('walking');
   el.offsetWidth; // start the transition after the position is applied
   el.style.transitionDuration = `${ms}ms, ${ms}ms, 300ms`;
   el.style.left = p.x + '%';
@@ -1640,7 +1911,7 @@ async function walk(el, p, g) {
   await wait(ms);
   if (g !== gen) return;
   loop('walk' + el.dataset.id, false);
-  el.classList.remove('step');
+  el.classList.remove('step', 'walking');
 }
 const sit = (ids, on) => ids.forEach(id => {
   els[id].style.transitionDuration = '0ms, 0ms, 300ms'; // only stand/sit gets a short transition
@@ -1656,8 +1927,7 @@ async function stepForth(id, g) {
   sit([id], false);
   await wait(300);
   if (g !== gen) return;
-  const a = seatOf(id);
-  await walk(el, { x: a.x + STAND_OFFSET * STAND_DIR[id], y: a.y }, g);
+  await walk(el, forthSpot(id, STAND_OFFSET), g);
 }
 async function returnSeat(id, g) {
   const el = els[id];
@@ -1981,7 +2251,7 @@ async function cutinIntro(id, text, g) {
     const c = CUTIN_HAND_CLIP[id], f = CUTIN_HAND_FEATHER_PX;
     const ramp = (dir, a, b) => `linear-gradient(${dir}, transparent ${a}%, #000 calc(${a}% + ${f}px), #000 calc(${b}% - ${f}px), transparent ${b}%)`;
     cutHand.style.maskImage = `${ramp('to right', c.xFrom, c.xTo)}, ${ramp('to bottom', c.yFrom, c.yTo)}`;
-  } else band.firstChild.innerHTML = spriteSVG('side', PALETTES[id], !left);
+  } else band.firstChild.innerHTML = spriteSVG('side', PALETTES[id], !left, id);
   burst.lastChild.textContent = text; // after the star svg
   cutinSound();
   dim.animate([{ opacity: 0 }, { opacity: C.dim }], { duration: 100, fill: 'forwards' });
@@ -2032,6 +2302,11 @@ async function filterDemo(g) {
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 const finished = anim => anim.finished.catch(() => {}); // cancelled by ◀: resolve, the gen check stops the caller
 const AVATAR_H = 4 * AVATAR_SCALE * 4 / 3; // avatar sprite height in cqw
+if (FIX4) { // reactions belong to the prosecutor/defender: scale their fireworks/balloons, keep the burst the same gap above the head
+  const R = REACTION, k = ADVOCATE_SCALE;
+  R.burstAbove = (AVATAR_H + R.burstAbove) * k - AVATAR_H;
+  ['particleSize', 'particleSpread', 'balloonsWidth', 'kneelOffset'].forEach(key => R[key] *= k); // kneel: just past the wider desk, clear of the juror labels
+}
 function firework(el) {
   const R = REACTION, box = tag('div');
   box.className = 'burst fx';
@@ -2106,12 +2381,12 @@ function impact(el, dir) {
 }
 // Loser: step forward, kneel, pound the floor; stays kneeling after
 async function lament(id, g) {
-  const R = REACTION, el = els[id], dir = STAND_DIR[id], seat = seatOf(id);
+  const R = REACTION, el = els[id], dir = STAND_DIR[id];
   el.style.zIndex = FURNITURE_FIX_V2 ? REACTION_AVATAR_Z_V2 : 98;
   sit([id], false);
   await wait(300);
   if (g !== gen) return;
-  await walk(el, { x: seat.x + R.kneelOffset * dir, y: seat.y }, g);
+  await walk(el, forthSpot(id, R.kneelOffset), g);
   if (g !== gen) return;
   el.classList.add('kneel');
   const sweat = Object.assign(tag('i'), { className: 'react sweat fx' });
