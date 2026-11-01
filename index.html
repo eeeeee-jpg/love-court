@@ -367,6 +367,131 @@
   #endOverlay { flex-direction: column; gap: 1.2cqw; }
   .card.outro { position: relative; background: rgba(255,255,255,.75); backdrop-filter: blur(2px); color: #222; }
   .card h1 { font-family: var(--font-title); }
+  /* ROLE_CARD_V25 */
+  #roleOverlay.v25 { background: rgba(0,0,0,var(--rc-dim)); backdrop-filter: blur(var(--rc-blur)); }
+  #roleOverlay.v25.vignette { background: radial-gradient(ellipse 60% 70% at 50% 50%, rgba(0,0,0,calc(var(--rc-dim) + .18)) 0%, rgba(0,0,0,var(--rc-dim)) 45%, rgba(0,0,0,calc(var(--rc-dim) - .14)) 100%); }
+  #roleOverlay.v25 .card { position: relative; width: var(--rc-w); border-radius: var(--rc-r); background: var(--rc-fill); opacity: var(--rc-op);
+    padding: calc(var(--rc-top) + var(--rc-in)) calc(var(--rc-x) + var(--rc-in)) calc(var(--rc-bottom) + var(--rc-in)); gap: var(--rc-gap); color: #F5ECD7;
+    box-shadow: inset 0 0 0 3px #2a170b, inset 0 0 0 4px var(--gold-base), var(--rc-halo); }
+  #roleOverlay.v25 .card .frame-tab { --tag: var(--tag-judge); }
+  #roleOverlay.v25 .card h1 { position: relative; font: 700 3cqw "Noto Serif KR", "Batang", "AppleMyungjo", serif; padding-bottom: .9cqw;
+    background: linear-gradient(var(--gold-light), var(--gold-dark)); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 1px 0 rgba(0,0,0,.9)); }
+  #roleOverlay.v25 .card h1::after { content: ''; position: absolute; left: 15%; right: 15%; bottom: 0; height: 4px;
+    background: linear-gradient(var(--gold-base), var(--gold-base)) top / 100% 1px no-repeat, linear-gradient(var(--gold-base), var(--gold-base)) bottom / 100% 1px no-repeat;
+    mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); }
+  #roleOverlay.v25 #caseTitle { font: 400 1.5cqw "Noto Serif KR", "Batang", "AppleMyungjo", serif; color: #F5ECD7; margin: 0 0 .4cqw; }
+  #roleOverlay.v25 #caseTitle::before, #roleOverlay.v25 #caseTitle::after { content: ''; display: inline-block; width: .42em; height: .42em; margin: 0 .7em;
+    vertical-align: .12em; rotate: 45deg; background: linear-gradient(135deg, var(--gold-light), var(--gold-dark)); }
+  #roleOverlay.v25 .card button { position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1cqw;
+    height: var(--rb-h); padding: 0 calc(var(--rb-h) * .5) 0 calc(var(--rb-strip) + var(--rb-h) * .4); font-size: calc(var(--rb-h) * var(--rb-font));
+    border: 1px solid rgba(212,175,55,.4); border-radius: 6px; text-align: left; transition: transform .12s, filter .12s; }
+  #roleOverlay.v25 .card button::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: var(--rb-strip); border-radius: 6px 0 0 6px; background: var(--role-c); }
+  #roleOverlay.v25 .card button b { font: 700 1.1em "Noto Serif KR", "Batang", "AppleMyungjo", serif; }
+  #roleOverlay.v25 .card button small { font-size: .82em; text-align: right; }
+  #roleOverlay.v25 .card button:disabled { background: var(--rb-locked-bg); color: var(--rb-locked-text); cursor: not-allowed; }
+  #roleOverlay.v25 .card button:disabled small { color: var(--rb-locked-muted); }
+  #roleOverlay.v25 .card button:disabled::after { content: ''; width: .9em; height: 1em; opacity: .6;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 12'%3E%3Cpath d='M2.5 5V3.5a2.5 2.5 0 0 1 5 0V5' fill='none' stroke='%23D4AF37' stroke-width='1.4'/%3E%3Crect x='1' y='5' width='8' height='6.5' rx='1' fill='%23D4AF37'/%3E%3C/svg%3E") center / contain no-repeat; }
+  #roleOverlay.v25 .card button:disabled:has(small) { grid-template-columns: auto 1fr auto auto; }
+  #roleOverlay.v25 :is(#pickJuror, .role-open) { grid-template-columns: auto 1fr auto auto; border: 1px solid var(--gold-light); color: var(--rb-juror-text);
+    background: linear-gradient(var(--gold-light), var(--gold-base), var(--gold-dark));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 2px 0 #6e4f16, 0 4px 10px rgba(0,0,0,.45);
+    animation: rbPulse var(--rb-pulse) ease-in-out infinite; }
+  #roleOverlay.v25 :is(#pickJuror, .role-open) small { color: rgba(42,26,13,.85); }
+  #roleOverlay.v25 :is(#pickJuror, .role-open)::after { content: ''; border: solid transparent; border-width: .42em 0 .42em .62em; border-left-color: var(--rb-juror-text);
+    animation: rbNudge 1.2s ease-in-out infinite alternate; }
+  #roleOverlay.v25 :is(#pickJuror, .role-open):hover { filter: brightness(1.08); transform: scale(1.02); }
+  #roleOverlay.v25 :is(#pickJuror, .role-open):active { transform: scale(.98); }
+  #roleOverlay.v25 .role-open.picked { transform: scale(.98); filter: brightness(1.12); }
+  .card .role-notice { position: absolute; left: 50%; bottom: 3px; translate: -50% 0; margin: 0; padding-top: 2px; white-space: nowrap;
+    font-size: .85cqw; line-height: 1.1; color: #F5ECD7; /* fits in the card's bottom padding, under the buttons */ opacity: 0; transition: opacity .25s; pointer-events: none;
+    border-top: 1px solid transparent; border-image: linear-gradient(90deg, transparent, var(--gold-base), transparent) 1; }
+  .card .role-notice.show { opacity: 1; }
+  /* PIXEL_FONT_V28: crisp bitmap rendering where the pixel font applies (sizes/families set in JS) */
+  .pf, .pf * { -webkit-font-smoothing: none; font-smooth: never; text-rendering: optimizeSpeed; font-kerning: none; letter-spacing: var(--pf-ls, 0px);
+    font-synthesis: none; } /* no faux bold: families without a bold file draw regular */
+  #roleOverlay.pf .card button.role-row.hl :is(b, small) { text-shadow: 0 1px 0 rgba(0,0,0,.55); }
+  #roleOverlay.pf.pf-solid .card h1 { background: none; color: var(--gold-base); filter: none; text-shadow: 1px 1px 0 #1a0f08; }
+  #stage.pf-dialogue #dialog, #stage.pf-chat #chat, #stage.pf-case #casePanel, #stage.pf-nameplate .nameplate b, #stage.pf-cutin #cutin .burst b {
+    font-family: 'GalmuriP11', var(--font-body); -webkit-font-smoothing: none; text-rendering: optimizeSpeed; font-kerning: none; }
+  /* ROLE_CARD_V27: ornate frame, menu rows with head slots */
+  #roleOverlay.v27 .card { width: var(--r7-w); border-radius: var(--r7-r); border: var(--r7-b) solid transparent; opacity: 1;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,var(--r7-stripe)) 0 1px, transparent 1px 3px) padding-box, var(--r7-fill) padding-box,
+                linear-gradient(135deg, var(--gold-light), var(--gold-base) 45%, var(--gold-dark)) border-box;
+    box-shadow: inset 0 0 18px rgba(0,0,0,.6), 0 0 0 1px #22140D, var(--rc-halo); }
+  #roleOverlay.v27 .card::before { content: ''; position: absolute; inset: var(--r7-gap); border: var(--r7-line) solid var(--gold-base);
+    border-radius: calc(var(--r7-r) - var(--r7-b)); pointer-events: none; }
+  #roleOverlay.v27 .r7-corner { position: absolute; width: var(--r7-corner); height: var(--r7-corner); pointer-events: none; z-index: 2; }
+  #roleOverlay.v27 #caseTitle { display: none; }
+  #roleOverlay.v27 .card .frame-tab { left: calc(var(--r7-corner) + .4cqw); } /* clear of the top-left scroll */
+  #roleOverlay.v27 .card { padding-bottom: calc(var(--rc-bottom) + var(--rc-in) + var(--r7-bottom-extra)); }
+  #roleOverlay.v27 .card h1 { margin-bottom: calc(var(--rc-top) - var(--rc-gap)); }
+  #roleOverlay.v27 .card { gap: 0; }
+  #roleOverlay.v27 .card button.role-row { height: var(--r7-row); display: grid; grid-template-columns: auto 1fr auto auto; align-items: center;
+    column-gap: 1cqw; padding: 0 calc(var(--rb-h) * .5) 0 calc(var(--r7-row) * .12); border: 0; border-radius: 4px; text-align: left;
+    background: var(--r7-row-fill); color: var(--r7-name); box-shadow: none; animation: none; filter: none; transform: none; font-size: calc(var(--rb-h) * var(--rb-font));
+    border-top: 1px solid var(--r7-sep); cursor: pointer; }
+  #roleOverlay.v27 .card button.role-row:first-of-type { border-top-color: transparent; }
+  #roleOverlay.v27 .card button.role-row::before { content: none; }
+  #roleOverlay.v27 .card button.role-row b { color: inherit; font-size: var(--r7-name-size); margin-left: calc(var(--r7-name-gap) - 1cqw); }
+  #roleOverlay.v27 .card button.role-row small { color: var(--r7-muted); }
+  #roleOverlay.v27 .card button.role-row::after { content: ''; border: solid transparent; border-width: .42em 0 .42em .62em; border-left-color: var(--r7-muted);
+    background: none; width: auto; height: auto; opacity: 1; animation: rbNudge 1.2s ease-in-out infinite alternate; }
+  #roleOverlay.v27 .role-slot { width: var(--r7-slot); height: var(--r7-slot); display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+    border-radius: 6px; border: 1.5px double var(--gold-base); outline: 1.5px solid rgba(212,175,55,.35); outline-offset: -4px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--slot-c) 70%, #000), var(--slot-c)); box-shadow: inset 0 2px 6px rgba(0,0,0,.6); }
+  #roleOverlay.v27 .role-slot svg { display: block; shape-rendering: crispEdges; image-rendering: pixelated; }
+  #roleOverlay.v27 .card button.role-row.hl { color: var(--r7-hl-text); border-top-color: var(--r7-hl-line);
+    background: linear-gradient(90deg, var(--r7-hl-from), var(--r7-hl-to)); box-shadow: inset 0 -1px 0 var(--r7-hl-line); }
+  #roleOverlay.v27 .card button.role-row.hl + button.role-row { border-top-color: var(--r7-hl-line); }
+  #roleOverlay.v27 .card button.role-row.hl small { color: var(--r7-hl-text); }
+  #roleOverlay.v27 .card button.role-row.hl :is(b, small) { text-shadow: 0 1px 1px rgba(0,0,0,.55); } /* the bar's light end is ~4:1 even for near-white text */
+  #roleOverlay.v27 .card button.role-row.hl::after { border-left-color: var(--r7-hl-text); }
+  #roleOverlay.v27 .card button.role-row.hl .role-slot { border-color: var(--gold-light); }
+  #roleOverlay.v27 .card button.role-row.hl .r7-pointer { display: block; }
+  #roleOverlay.v27 .r7-pointer { display: none; position: absolute; left: -.9cqw; top: 50%; translate: 0 -50%; border: solid transparent;
+    border-width: .55cqw 0 .55cqw .7cqw; border-left-color: var(--gold-light); filter: drop-shadow(0 1px 0 rgba(0,0,0,.6)); }
+  #roleOverlay.v27 .card button.role-row.hl.pulse { animation: r7Pulse 2.4s ease-in-out infinite; }
+  @keyframes r7Pulse { 0%, 100% { filter: brightness(.94); } 50% { filter: brightness(1.06); } }
+  #roleOverlay.v27 .card button.role-row.picked { transform: scale(.985); }
+  /* PIXEL_UI_V29 */
+  #roleOverlay.pf29 .card button.role-row.picked { transform: none; filter: brightness(1.12); } /* no fractional scale on text */
+  .pf29 :is(h1, b, small, span, p) { font-weight: 700; }
+  .pf29 :is(b, small, span, p):not(.frame-tab b) { text-shadow: var(--fb) 0 0 currentColor; }
+  #roleOverlay.pf29 .card button.role-row.hl :is(b, small) { text-shadow: var(--fb) 0 0 currentColor, 0 1px 0 rgba(0,0,0,.55), var(--fb) 1px 0 rgba(0,0,0,.55); }
+  #roleOverlay.pf29.pf-solid .card h1 { background: none; color: var(--gold-base); filter: none;
+    text-shadow: var(--fb) 0 0 var(--gold-base), 0 2px 0 #1a0f08, var(--fb) 2px 0 #1a0f08; }
+  .pf29 .frame-tab b { color: var(--rib-c); text-shadow: var(--fb) 0 0 var(--rib-c), 0 1px 0 var(--rib-s), var(--fb) 1px 0 var(--rib-s); letter-spacing: 0; }
+  #roleOverlay.pf29 .card .frame-tab b { padding: calc(.25cqw * var(--rib-k)) calc(1.6cqw * var(--rib-k)); }
+  /* Gauge v29: ornate frame (same build as the role card), H-based padding, square pixel bar with cells */
+  #gauge.v29 { border-radius: var(--g7-r); border: var(--g7-b) solid transparent; padding: var(--g-pad-top) var(--g-pad-x) var(--g-pad-bottom);
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,var(--r7-stripe, .04)) 0 1px, transparent 1px 3px) padding-box,
+                linear-gradient(180deg, rgba(34,23,20,0.97) 0%, rgba(20,13,11,0.97) 100%) padding-box,
+                linear-gradient(135deg, var(--gold-light), var(--gold-base) 45%, var(--gold-dark)) border-box;
+    box-shadow: inset 0 0 18px rgba(0,0,0,.6), 0 0 0 1px #22140D, 0 8px 24px rgba(0,0,0,.5); color: #F5ECD7; font-size: var(--g-font); }
+  #gauge.v29::before { content: ''; position: absolute; inset: var(--g7-gap); border: var(--g7-line) solid var(--gold-base); border-radius: calc(var(--g7-r) - var(--g7-b)); pointer-events: none; }
+  #gauge.v29::after { content: none; }
+  #gauge.v29 .g7-corner { position: absolute; width: var(--g7-corner); height: var(--g7-corner); pointer-events: none; z-index: 2; }
+  #gauge.v29 .frame-tab { font-size: var(--g-tab-font); left: calc(var(--g7-corner) + .3cqw); }
+  #gauge.v29 .frame-tab b { padding: calc(.25cqw * var(--g-k)) calc(1.6cqw * var(--g-k)); }
+  #gauge.v29 .g-row { grid-template-columns: max-content var(--g-num-w) var(--g-arrow-w) 1fr; column-gap: calc(var(--g-h) * .3); margin: 0; }
+  #gauge.v29 .g-row + .g-row { margin-top: var(--g-row-gap); }
+  #gauge.v29 .g-num { text-align: right; }
+  #gauge.v29 .g-bar { margin-left: calc(var(--g-label-bar) - var(--g-h) * .3); height: var(--g-bar-h); border: 1px solid rgba(0,0,0,.6); border-radius: 0;
+    background: repeating-linear-gradient(90deg, var(--g-track) 0 calc(10% - var(--g-cell-gap)), transparent calc(10% - var(--g-cell-gap)) 10%); }
+  #gauge.v29 .g-bar i { border-radius: 0; box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -1px 0 rgba(0,0,0,.45); }
+  #gauge.v29 .g-arrow { border-width: calc(.4cqw * var(--g-k)); }
+  #gauge.v29 .g-arrow.up { border-top: 0; border-bottom-width: calc(.6cqw * var(--g-k)); }
+  #gauge.v29 .g-arrow.down { border-width: calc(.28cqw * var(--g-k)); border-bottom: 0; border-top-width: calc(.4cqw * var(--g-k)); }
+  #roleOverlay.v27 .card button.role-row:disabled { opacity: .55; cursor: not-allowed; background: var(--r7-row-fill); color: var(--r7-name); }
+  #roleOverlay.v27 .card button.role-row:disabled .role-slot svg { filter: grayscale(1); }
+  #roleOverlay.v27 .card button.role-row:disabled::after { border: 0; width: .9em; height: 1em; animation: none; opacity: .8;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 12'%3E%3Cpath d='M2.5 5V3.5a2.5 2.5 0 0 1 5 0V5' fill='none' stroke='%23D4AF37' stroke-width='1.4'/%3E%3Crect x='1' y='5' width='8' height='6.5' rx='1' fill='%23D4AF37'/%3E%3C/svg%3E") center / contain no-repeat; }
+  #roleOverlay.v27 .card .role-notice { color: var(--r7-name); }
+  .card:has(> .role-notice) { position: relative; }
+  @keyframes rbNudge { to { translate: var(--rb-nudge) 0; } }
+  @keyframes rbPulse { 50% { box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 2px 0 #6e4f16, 0 4px 10px rgba(0,0,0,.45), 0 0 14px 2px rgba(232,199,102,.55); } }
 
   /* Decorative frame: gold double border (2px, 3px dark gap, 1px), gold corner L + dot, optional striped band outside */
   .frame { border: 2px solid var(--gold-base); box-shadow: inset 0 0 0 3px #2a170b, inset 0 0 0 4px var(--gold-base); }
@@ -769,6 +894,7 @@ const VERDICT_STAMPS = { notGuilty: '무죄!', protestJustified: '항의 정당!
 // Juror mood gauge (stages 6~9): the speaker's side goes up by delta when the line finishes typing (GAUGE_MODE decides the other side).
 // GAUGE_LINES: the n-th entry for a stage + speaker matches that speaker's n-th line in the stage; judge and system lines don't move it (placeholder values)
 const GAUGE_TEXT = { title: '배심원의 마음', notGuilty: '무죄 쪽', protest: '항의 쪽' };
+const GAUGE_LABELS = { innocent: '무죄', protest: '유죄' }; // PIXEL_UI_V29 row labels (keys/values unchanged)
 const GAUGE_START = { innocent: 50, protest: 50 };
 const GAUGE_LINES = [
   { stage: 6, speaker: 'prosecutor', side: 'protest',  delta: 6 },  // issue 1
@@ -789,6 +915,15 @@ const CLOSING = [
   { id: 'judge',      text: '배심원 여러분은 지금부터 양측의 주장을 바탕으로 자유롭게 토론하고, 이어서 평결을 내려 주시기 바랍니다.' },
 ];
 const PROSECUTOR_NICK = '민트'; // role select screen only
+const ROLE_CARD_TEXT = { tab: '역할 선택', tabV25: '배심원 모집', // ribbon tab (ROLE_CARD_V27 / V25)
+  demoOnly: '시연에서는 배심원으로 참여합니다' }; // placeholder; ROLE_OPEN_V26 notice when a closed role is pressed ('' = shake only)
+// Role card v26: every role open; status text built from taken/capacity (the judge is not a choice)
+const ROLE_OPTIONS = [
+  { key: 'prosecutor', label: '검사',   capacity: 1, taken: 0 },
+  { key: 'defender',   label: '변호인', capacity: 1, taken: 0 },
+  { key: 'juror',      label: '배심원', capacity: 7, taken: 0 },
+];
+const ROLE_STATUS_FORMAT = '{taken}/{capacity} 선택됨 · 남은 자리 {left}';
 const DEFENDER_NICK = '라떼';
 
 
@@ -1170,6 +1305,79 @@ const CHAT_BACKDROP_DIM = 0.38;     // dark layer over the scene while the trial
 const CHAT_BACKDROP_FADE_MS = 250;
 const CHAT_MESSAGE_GAP_CQW = 1.2; // space between messages, cqw of the chat window
 // Stage 0 logo (logo.png) before the role cards: fades in and waits for a click, then shrinks out and the cards appear
+// Role select card v25: .frame look (pattern band, gold double border, corner marks, ribbon tab), warm fill, halo, role buttons.
+// false = before -----
+const ROLE_CARD_V25 = true;
+const ROLE_CARD = { fill: 'linear-gradient(180deg, #3A2A2E 0%, #2A1C20 100%)', fillOpacity: 0.96, widthPct: 46, radiusPx: 12 };
+const ROLE_CARD_HALO = '0 0 0 2px rgba(212,175,55,0.35), 0 0 28px rgba(212,175,55,0.22), 0 18px 48px rgba(0,0,0,0.7)';
+const ROLE_BACKDROP_DIM = 0.65;           // current scene dim behind the card
+const ROLE_BACKDROP_DIM_V25 = Math.max(0.30, ROLE_BACKDROP_DIM - 0.12);
+const ROLE_BACKDROP_BLUR_PX = 3;
+const ROLE_BACKDROP_VIGNETTE = true;      // darker behind the card, lighter toward the edges
+const ROLE_CARD_POP_MS = 400;
+const ROLE_CARD_FRAME_CLEAR_PX = 8;       // added to the padding: inner gold line (4px) + room so the corner marks clear the buttons
+// Role card v26 behavior: all roles shown open; the demo only proceeds as DEMO_PICK_ROLE. false = before -----
+const ROLE_OPEN_V26 = true;
+// Role card v27 (with V25 + V26): ornate gold frame with corner scrolls, menu rows with pixel head slots, one highlighted row.
+// false = the v26 card -----
+const ROLE_CARD_V27 = true;
+const ROLE_FRAME_STYLE = 'ornate';
+const ROLE_CARD_V27_BOX = { widthPct: 50, radiusPx: 14, borderPx: 5, innerGapPx: 3, innerLinePx: 1.5, cornerCqw: 4.2, cornerOutPx: 8,
+                            bottomExtraCqw: 1 }; // bottomExtra: room under the last row (balance with the title gap; the notice sits there)
+const ROLE_UI = {
+  panelFill: 'linear-gradient(180deg, rgba(34,23,20,0.97) 0%, rgba(20,13,11,0.97) 100%)', stripeOpacity: 0.04,
+  rowFill: 'rgba(0,0,0,0.28)', separator: 'rgba(212,175,55,0.28)', name: '#F5ECD7', muted: 'rgba(245,236,215,0.78)',
+  highlightFrom: '#8A4A2B', highlightTo: '#B2693A', highlightText: '#FFF7E6', highlightLine: 'rgba(212,175,55,0.6)',
+  rowHeightScale: 1.3, slotRatio: 0.8, nameRatio: 0.34, nameGapCqw: 1.6,
+  slotBg: { prosecutor: '#3A1620', defender: '#17403E', juror: '#2D2A24' },
+};
+const HIGHLIGHT_DEFAULT = 'demo_pick';   // first highlighted row: DEMO_PICK_ROLE
+const ROLE_HINT_PULSE = true;            // the demo row's highlight breathes (brightness +-6%, 2.4 s)
+// Front-facing juror head for the slot (12 x 11 sprite px): h hair, s skin, E eye, m mouth, c shirt
+const JUROR_FACE_SPRITE = {
+  rows: ['...hhhhhh...', '..hhhhhhhh..', '..hhhhhhhh..', '..hssssssh..', '..sEssssEs..', '..ssssssss..', '..sssmmsss..',
+         '...ssssss...', '....ssss....', '..cccccccc..', '.cccccccccc.'],
+  colors: { h: '#3b2a20', s: '#f1c9a0', E: '#222', m: '#7a3b2e', c: '#e8e2d0' },
+};
+// Pixel font v28 (local files in fonts/ only, SIL OFL): role card text in Galmuri, snapped to whole multiples of each design size.
+// false = the previous fonts -----
+const PIXEL_FONT_V28 = true;
+// Registered families: design px + files that exist in fonts/ (Galmuri9 is not there: P9 uses GalmuriMono9, the nearest 9 px file)
+const PIXEL_FONTS = {
+  GalmuriP14: { px: 14, regular: 'fonts/Galmuri14.woff2' },
+  GalmuriP11: { px: 11, regular: 'fonts/Galmuri11.woff2', bold: 'fonts/Galmuri11-Bold.woff2' },
+  GalmuriP9:  { px: 9,  regular: 'fonts/GalmuriMono9.woff2' },
+};
+const PIXEL_FONT_SCOPE = ['role_card'];  // hooks: 'dialogue', 'chat', 'case', 'nameplate', 'cutin'
+const PIXEL_FONT_MAP = { title: 'GalmuriP14', name: 'GalmuriP14', tab: 'GalmuriP11', status: 'GalmuriP11', notice: 'GalmuriP11' };
+const PIXEL_FONT_FALLBACK = ['GalmuriP14', 'GalmuriP11', 'GalmuriP9']; // a target below 0.75x of a family's px steps down this list
+const PIXEL_FONT_SNAP = true;
+const PIXEL_LETTER_SPACING_PX = 0;
+const PIXEL_TITLE_SOLID = false;          // true: solid gold title with a 1px hard shadow instead of the gradient
+const PIXEL_FONT_LOAD_TIMEOUT_MS = 2500;  // the card waits at most this long for the fonts
+// ----- Pixel UI v29: role card + gauge text in Galmuri11-Bold at whole multiples of 11 px, 1px overlap for extra weight,
+// role ribbon x2, the gauge in the ornate frame at x1.5 with H-based padding and a pixel bar. false = before -----
+const PIXEL_UI_V29 = true;
+const PIXEL_BOLD_FAMILY = 'GalmuriP11';   // 700 = Galmuri11-Bold.woff2 (the only bold file)
+const PIXEL_FAUX_BOLD_PX = 1;             // same-color text shadow 1px to the right (0 = off)
+const PIXEL_TITLE_SCALE = 4;              // title = 11 px x this (lowered automatically to fit the card)
+const PIXEL_TITLE_SOLID_V29 = true;       // solid gold title + hard 2px-down shadow
+const ROLE_RIBBON_SCALE = 2;
+const ROLE_RIBBON_TEXT = { color: '#FFF7E6', shadow: '#10203a' };
+const GAUGE_PANEL_SCALE = 1.5;
+const GAUGE_ORNATE = { borderPx: 5, innerGapPx: 3, innerLinePx: 1.5, cornerCqw: 3, cornerOutPx: 6, radiusPx: 10 }; // x GAUGE_PANEL_SCALE
+const GAUGE_PADDING = { x: 1.2, top: 1.0, bottom: 1.0, rowGap: 0.8, labelToBar: 1.0, tabGapMin: 0.8 }; // x H (text height)
+const GAUGE_BAR = { cells: 10, track: 'rgba(0,0,0,0.45)', cellGapPx: 1 };
+const ROLE_HEAD_ROWS = 11;
+const ROLE_HEAD_FILL = 0.94;            // head sprite height <= this share of the slot (integer pixel scale; the rest is headroom)               // advocate sprites cropped to rows 0..10 (head + collar + shoulders)
+const DEMO_PICK_ROLE = 'juror';
+const DEMO_ALLOWED_ROLES = ['juror'];
+const ROLE_NEXT_BUTTON_ENABLED = false; // true: ▶ / → on the card acts like picking DEMO_PICK_ROLE
+const ROLE_PICK_HOLD_MS = 400;          // pressed look + updated count before the card fades
+const ROLE_DENY_SHAKE_MS = 300;
+const ROLE_NOTICE_MS = 2000;
+const ROLE_BUTTON = { heightCqw: 3.2, fontRatio: 0.36, stripPx: 6, lockedBg: '#2A1E1D', lockedText: 'rgba(245,236,215,0.78)',
+                      lockedMuted: 'rgba(245,236,215,0.62)', jurorText: '#2A1A0D', pulseMs: 2400, nudgePx: 4 };
 const LOGO_INTRO_ENABLED = true;
 const LOGO_NEXT_BUTTON_ENABLED = false; // true: ▶ / → on the logo works like a click
 const LOGO_WIDTH_PCT = 80;              // % of the container width (and max % of its height)
@@ -1406,6 +1614,254 @@ const votePanel = document.getElementById('votePanel');
 const roleOverlay = document.getElementById('roleOverlay');
 const endOverlay = document.getElementById('endOverlay');
 const roleCard = roleOverlay.querySelector('.card');
+if (ROLE_CARD_V25) {
+  const R = ROLE_CARD, B = ROLE_BUTTON, P = PANEL_PADDING, k = R.widthPct / 100; // padding tokens in the card's width ratio
+  roleOverlay.classList.add('v25');
+  roleOverlay.classList.toggle('vignette', ROLE_BACKDROP_VIGNETTE);
+  roleCard.classList.add('frame', 'patterned');
+  const tab = Object.assign(document.createElement('div'), { className: 'frame-tab' });
+  tab.append(Object.assign(document.createElement('b'), { textContent: ROLE_CARD_V27 ? ROLE_CARD_TEXT.tab : ROLE_CARD_TEXT.tabV25 }));
+  roleCard.prepend(tab);
+  [['--rc-dim', ROLE_BACKDROP_DIM_V25], ['--rc-blur', ROLE_BACKDROP_BLUR_PX + 'px'], ['--rc-w', R.widthPct + 'cqw'], ['--rc-r', R.radiusPx + 'px'],
+   ['--rc-fill', R.fill], ['--rc-op', R.fillOpacity], ['--rc-halo', ROLE_CARD_HALO], ['--rc-in', ROLE_CARD_FRAME_CLEAR_PX + 'px'],
+   ['--rc-x', P.xCqw * k + 'cqw'], ['--rc-top', P.topCqw * k + 'cqw'], ['--rc-bottom', P.bottomCqw * k + 'cqw'], ['--rc-gap', P.messageGapCqw * k + 'cqw'],
+   ['--rb-h', B.heightCqw + 'cqw'], ['--rb-font', B.fontRatio], ['--rb-strip', B.stripPx + 'px'], ['--rb-locked-bg', B.lockedBg],
+   ['--rb-locked-text', B.lockedText], ['--rb-locked-muted', B.lockedMuted], ['--rb-juror-text', B.jurorText],
+   ['--rb-pulse', B.pulseMs + 'ms'], ['--rb-nudge', B.nudgePx + 'px']].forEach(([n, v]) => roleOverlay.style.setProperty(n, v));
+  if (!ROLE_OPEN_V26) {
+    const [bp, bd, bj] = roleCard.querySelectorAll('button');
+    bp.style.setProperty('--role-c', UI_PALETTE.tagProsecutor);
+    bd.style.setProperty('--role-c', UI_PALETTE.tagDefender);
+    bj.style.setProperty('--role-c', `linear-gradient(${UI_PALETTE.tagJuror}, ${UI_PALETTE.tagJuror}) left / 50% 100% no-repeat, ${NAMEPLATE_GOLD.light}`);
+  }
+}
+// v27: ornate frame + corner scrolls; head sprites for the role slots
+const V27 = ROLE_CARD_V27 && ROLE_CARD_V25 && ROLE_OPEN_V26;
+const roleHeadSVG = key => { // 12-wide pixel head: advocates cropped from their AVATAR_V2 side sprite (facing right), juror from JUROR_FACE_SPRITE
+  let rows, colors;
+  if (key === 'juror') ({ rows, colors } = JUROR_FACE_SPRITE);
+  else {
+    const P = AVATAR_PALETTE[key];
+    rows = avatarRows(AVATAR_LAYERS[key].side, SPRITES.side.length).slice(0, ROLE_HEAD_ROWS);
+    colors = { s: P.skin, E: P.eye, ...Object.fromEntries(Object.entries(AVATAR_LEGEND[key]).map(([ch, k]) => [ch, P[k]])) };
+  }
+  let body = '';
+  rows.forEach((row, y) => [...row].forEach((ch, x) => { if (colors[ch]) body += `<rect x="${x}" y="${y}" width="1" height="1" fill="${colors[ch]}"/>`; }));
+  return `<svg viewBox="0 0 12 ${rows.length}" data-rows="${rows.length}">${body}</svg>`;
+};
+const r7CornerSVG = (i, id = 'r7g', cls = 'r7-corner', out = '--r7-out') => `<svg viewBox="0 0 40 40" class="${cls}" style="${['left', 'right'][i % 2]}: calc(var(${out}) * -1); ${['top', 'bottom'][i >> 1]}: calc(var(${out}) * -1); transform: scale(${i % 2 ? -1 : 1}, ${i >> 1 ? -1 : 1})">`
+  + `<defs><linearGradient id="${id}${i}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${NAMEPLATE_GOLD.light}"/><stop offset=".5" stop-color="${NAMEPLATE_GOLD.base}"/><stop offset="1" stop-color="${NAMEPLATE_GOLD.dark}"/></linearGradient></defs>`
+  + `<g fill="none" stroke="url(#${id}${i})" stroke-width="3" stroke-linecap="round">`
+  + `<path d="M6 36 C6 16 16 6 36 6"/>`                                         // outer curve hugging the corner
+  + `<path d="M14 26 C14 17 18 14 24 14 C29 14 30 20 26 21 C23 22 22 19 24 18"/>`  // inner scroll curling in
+  + `</g><path d="M36 6 Q40 1 39 8 Q36 10 36 6Z" fill="url(#${id}${i})"/>`         // leaf at the end
+  + `<circle cx="6" cy="37" r="2.2" fill="url(#${id}${i})"/></svg>`;
+if (V27) {
+  const X = ROLE_CARD_V27_BOX, U = ROLE_UI, rowH = ROLE_BUTTON.heightCqw * U.rowHeightScale;
+  roleOverlay.classList.add('v27');
+  roleCard.classList.remove('frame', 'patterned'); // keeps its ribbon tab; the ornate frame replaces the band and corner marks
+  roleCard.insertAdjacentHTML('beforeend', [0, 1, 2, 3].map(i => r7CornerSVG(i)).join(''));
+  [['--r7-w', X.widthPct + 'cqw'], ['--r7-r', X.radiusPx + 'px'], ['--r7-b', X.borderPx + 'px'], ['--r7-gap', X.innerGapPx + 'px'],
+   ['--r7-line', X.innerLinePx + 'px'], ['--r7-corner', X.cornerCqw + 'cqw'], ['--r7-out', X.cornerOutPx + 'px'], ['--r7-fill', U.panelFill],
+   ['--r7-stripe', U.stripeOpacity], ['--r7-row-fill', U.rowFill], ['--r7-sep', U.separator], ['--r7-name', U.name], ['--r7-muted', U.muted],
+   ['--r7-hl-from', U.highlightFrom], ['--r7-hl-to', U.highlightTo], ['--r7-hl-text', U.highlightText], ['--r7-hl-line', U.highlightLine],
+   ['--r7-row', rowH + 'cqw'], ['--r7-slot', rowH * U.slotRatio + 'cqw'], ['--r7-name-size', rowH * U.nameRatio + 'cqw'],
+   ['--r7-name-gap', U.nameGapCqw + 'cqw'], ['--r7-bottom-extra', X.bottomExtraCqw + 'cqw']].forEach(([k, v]) => roleOverlay.style.setProperty(k, v));
+}
+// ----- Pixel font (v28): register local faces, load them during the logo, snap sizes to whole multiples -----
+const pixelFontReport = { applied: [], failed: [] };
+const pixelFontsReady = (() => {
+  if (!PIXEL_FONT_V28) return Promise.resolve(false);
+  const faces = [];
+  Object.entries(PIXEL_FONTS).forEach(([family, f]) => [['regular', '400'], ['bold', '700']].forEach(([k, weight]) => {
+    if (!f[k]) return;
+    const face = new FontFace(family, `url("${f[k]}")`, { weight, display: 'block' });
+    document.fonts.add(face);
+    faces.push(face.load().then(() => pixelFontReport.applied.push(`${family} ${weight} (${f[k].split('/').pop()})`),
+                                () => pixelFontReport.failed.push(`${family} ${weight} (${f[k].split('/').pop()})`)));
+  }));
+  const timeout = new Promise(r => setTimeout(r, PIXEL_FONT_LOAD_TIMEOUT_MS));
+  return Promise.race([Promise.all(faces), timeout]).then(() => {
+    console.log('[court] pixel fonts loaded:', pixelFontReport.applied, 'failed:', pixelFontReport.failed);
+    if (!pixelFontReport.applied.length) console.warn('[court] pixel fonts: none loaded (missing files or blocked, e.g. file://) - previous fonts kept');
+    return pixelFontReport.applied.length > 0;
+  });
+})();
+const pixelFontOK = family => pixelFontReport.applied.some(a => a.startsWith(family + ' '));
+// Snapped size: nearest whole multiple (>= 1x) of the family's design px; too small for 1x -> the next smaller family
+function pixelSize(family, target) {
+  let fam = family;
+  const order = PIXEL_FONT_FALLBACK;
+  for (let i = order.indexOf(fam); i >= 0 && i < order.length - 1 && target < PIXEL_FONTS[fam].px * .75; ) fam = order[++i];
+  const base = PIXEL_FONTS[fam].px;
+  return { fam, px: PIXEL_FONT_SNAP ? base * Math.max(1, Math.round(target / base)) : target, k: Math.max(1, Math.round(target / base)) };
+}
+const pixelSizes = {};
+function applyPixelFont() {
+  if (!PIXEL_FONT_V28 || !pixelFontReport.applied.length || !PIXEL_FONT_SCOPE.includes('role_card')) return;
+  roleOverlay.classList.add('pf');
+  roleOverlay.classList.toggle('pf-solid', PIXEL_TITLE_SOLID);
+  roleOverlay.style.setProperty('--pf-ls', PIXEL_LETTER_SPACING_PX + 'px');
+  const parts = { title: [roleCard.querySelector('h1')], tab: [roleCard.querySelector('.frame-tab b')].filter(Boolean),
+                  name: [...roleCard.querySelectorAll('button b')], status: [...roleCard.querySelectorAll('button small')],
+                  notice: [roleCard.querySelector('.role-notice')].filter(Boolean) };
+  Object.entries(parts).forEach(([key, els]) => {
+    if (!els.length) return;
+    els.forEach(el => { el.style.fontSize = el.style.fontFamily = ''; }); // measure the designed size first
+    const target = parseFloat(getComputedStyle(els[0]).fontSize), want = PIXEL_FONT_MAP[key];
+    let { fam, px, k } = pixelSize(want, target);
+    if (!pixelFontOK(fam)) fam = PIXEL_FONT_FALLBACK.find(pixelFontOK) ?? fam; // a missing file: nearest loaded family
+    els.forEach(el => Object.assign(el.style, { fontFamily: `'${fam}', var(--font-title)`, fontSize: px + 'px' }));
+    pixelSizes[key] = { family: fam, target: +target.toFixed(1), px, scale: k };
+  });
+  if (PIXEL29) applyPixelUI29();
+  // A row whose name and status would touch: the status steps down to the next smaller family
+  requestAnimationFrame(() => roleCard.querySelectorAll('button').forEach(b => {
+    const n = b.querySelector('b'), st = b.querySelector('small');
+    if (n && st && n.getBoundingClientRect().right + 4 > st.getBoundingClientRect().left && st.getBoundingClientRect().width) {
+      const { fam, px } = pixelSize('GalmuriP9', parseFloat(st.style.fontSize) * .8);
+      Object.assign(st.style, { fontFamily: `'${fam}', var(--font-title)`, fontSize: px + 'px' });
+      pixelSizes.statusSteppedDown = true;
+    }
+  }));
+}
+// v29: everything in Galmuri11-Bold (P11 700) at whole multiples of 11 px; title up to PIXEL_TITLE_SCALE x, ribbon x2
+const PIXEL29 = PIXEL_UI_V29 && PIXEL_FONT_V28;
+const px11 = target => 11 * Math.max(1, Math.round(target / 11));
+function applyPixelUI29() {
+  if (!PIXEL29 || !pixelFontOK(PIXEL_BOLD_FAMILY)) return;
+  const fam = `'${PIXEL_BOLD_FAMILY}', var(--font-title)`;
+  roleOverlay.classList.add('pf29');
+  roleOverlay.classList.toggle('pf-solid', PIXEL_TITLE_SOLID_V29);
+  [['--fb', PIXEL_FAUX_BOLD_PX + 'px'], ['--rib-k', ROLE_RIBBON_SCALE], ['--rib-c', ROLE_RIBBON_TEXT.color], ['--rib-s', ROLE_RIBBON_TEXT.shadow]]
+    .forEach(([k, v]) => roleOverlay.style.setProperty(k, v));
+  const set = (els, px) => els.forEach(el => Object.assign(el.style, { fontFamily: fam, fontSize: px + 'px' }));
+  // Ribbon: 11 px x ROLE_RIBBON_SCALE (padding scales with it in CSS)
+  const tab = roleCard.querySelector('.frame-tab'), tabB = tab?.querySelector('b');
+  if (tabB) { set([tabB], 11 * ROLE_RIBBON_SCALE); tab.style.fontSize = 11 * ROLE_RIBBON_SCALE + 'px'; }
+  // Title: the largest multiple <= PIXEL_TITLE_SCALE that fits the card's inner width
+  const h1 = roleCard.querySelector('h1'), inner = roleCard.clientWidth - parseFloat(getComputedStyle(roleCard).paddingLeft) * 2;
+  plateCtx.font = `700 11px '${PIXEL_BOLD_FAMILY}'`;
+  const w11 = plateCtx.measureText(h1.textContent).width;
+  const tk = Math.max(1, Math.min(PIXEL_TITLE_SCALE, Math.floor(inner / Math.max(1, w11))));
+  set([h1], 11 * tk);
+  pixelSizes.title = { family: PIXEL_BOLD_FAMILY + ' 700', px: 11 * tk, scale: tk };
+  pixelSizes.tab = { family: PIXEL_BOLD_FAMILY + ' 700', px: 11 * ROLE_RIBBON_SCALE, scale: ROLE_RIBBON_SCALE };
+  [['name', 'button b'], ['status', 'button small'], ['notice', '.role-notice']].forEach(([key, sel]) => {
+    const els = [...roleCard.querySelectorAll(sel)];
+    if (!els.length) return;
+    els.forEach(el => el.style.fontSize = el.style.fontFamily = '');
+    const px = px11(parseFloat(getComputedStyle(els[0]).fontSize));
+    set(els, px);
+    pixelSizes[key] = { family: PIXEL_BOLD_FAMILY + ' 700', px, scale: px / 11 };
+  });
+  // Room under the bigger ribbon: title starts PANEL_PADDING.topCqw (card ratio) below the ribbon's bottom edge
+  if (tab && !roleOverlay.hidden) { // layout offsets (not screen rects): the pop animation's transform must not feed back
+    const reach = tab.offsetTop + tab.offsetHeight * .45; // .frame-tab hangs 55% above the card edge
+    const gap = PANEL_PADDING.topCqw * ROLE_CARD_V27_BOX.widthPct / 100 * stage.clientWidth / 100;
+    roleCard.style.paddingTop = Math.round(reach + gap) + 'px';
+    // Keep the ribbon on screen: the card is centered, so a top margin moves it down by half
+    roleCard.style.marginTop = '';
+    const top = roleCard.offsetTop + tab.offsetTop - tab.offsetHeight * .55;
+    if (top < 4) roleCard.style.marginTop = Math.ceil(4 - top) * 2 + 'px';
+  }
+}
+if (PIXEL_FONT_V28) {
+  pixelFontsReady.then(applyPixelFont);
+  if (PIXEL_UI_V29) pixelFontsReady.then(() => layoutGauge29());
+  addEventListener('resize', applyPixelFont);
+  PIXEL_FONT_SCOPE.filter(k => k !== 'role_card').forEach(k => stage.classList.add('pf-' + k));
+}
+// Integer pixel scale for the head sprites (re-run on resize)
+function sizeRoleHeads() {
+  roleCard.querySelectorAll('.role-slot svg').forEach(svg => {
+    const slot = svg.parentElement.clientHeight, rows = +svg.dataset.rows, k = Math.max(1, Math.floor(slot * ROLE_HEAD_FILL / rows));
+    Object.assign(svg.style, { width: 12 * k + 'px', height: rows * k + 'px' });
+  });
+}
+function highlightRole(b) {
+  if (!V27 || !b || b.disabled) return;
+  roleCard.querySelectorAll('button.role-row').forEach(x => x.classList.toggle('hl', x === b));
+  b.classList.toggle('pulse', ROLE_HINT_PULSE && b.dataset.key === DEMO_PICK_ROLE);
+}
+addEventListener('resize', sizeRoleHeads);
+// v26: role buttons from ROLE_OPTIONS (all open); closed roles shake + show ROLE_CARD_TEXT.demoOnly; the demo role proceeds
+const roleState = ROLE_OPTIONS.map(o => ({ ...o }));
+let roleNoticeTimer = 0;
+const roleStatus = o => ROLE_STATUS_FORMAT.replace('{taken}', o.taken).replace('{capacity}', o.capacity).replace('{left}', o.capacity - o.taken);
+const ROLE_STRIP = { prosecutor: UI_PALETTE.tagProsecutor, defender: UI_PALETTE.tagDefender,
+                     juror: `linear-gradient(${UI_PALETTE.tagJuror}, ${UI_PALETTE.tagJuror}) left / 50% 100% no-repeat, ${NAMEPLATE_GOLD.light}` };
+function renderRoleButtons() {
+  roleCard.querySelectorAll('button').forEach(b => b.remove());
+  const notice = roleCard.querySelector('.role-notice');
+  roleState.forEach((o, i) => {
+    const b = document.createElement('button'), full = o.taken >= o.capacity;
+    b.dataset.key = o.key;
+    b.disabled = full;
+    b.classList.toggle('role-open', !full && !V27); // v27 rows have their own style (not the v25 gold button)
+    b.style.setProperty('--role-c', ROLE_STRIP[o.key] ?? UI_PALETTE.tagJuror);
+    b.append(Object.assign(document.createElement('b'), { textContent: o.label }), Object.assign(document.createElement('small'), { textContent: roleStatus(o) }));
+    if (V27) { // [pointer][head slot] name ... status triangle
+      b.classList.add('role-row');
+      const slot = Object.assign(document.createElement('span'), { className: 'role-slot', innerHTML: roleHeadSVG(o.key) });
+      slot.style.setProperty('--slot-c', ROLE_UI.slotBg[o.key] ?? ROLE_UI.slotBg.juror);
+      b.prepend(Object.assign(document.createElement('i'), { className: 'r7-pointer' }), slot);
+      b.onmouseenter = b.onfocus = () => highlightRole(b);
+    }
+    b.onclick = () => chooseRole(o.key, b);
+    roleCard.insertBefore(b, notice);
+  });
+  if (V27) {
+    const first = HIGHLIGHT_DEFAULT === 'demo_pick' ? roleCard.querySelector(`button[data-key="${DEMO_PICK_ROLE}"]`) : roleCard.querySelector('button.role-row');
+    highlightRole(first);
+    requestAnimationFrame(sizeRoleHeads);
+  }
+  if (PIXEL_FONT_V28) applyPixelFont(); // rebuilt rows lose their inline font
+}
+function showRoleNotice() {
+  const n = roleCard.querySelector('.role-notice');
+  if (!ROLE_CARD_TEXT.demoOnly) return;
+  n.textContent = ROLE_CARD_TEXT.demoOnly;
+  n.classList.add('show');
+  clearTimeout(roleNoticeTimer);
+  roleNoticeTimer = setTimeout(() => n.classList.remove('show'), ROLE_NOTICE_MS);
+}
+async function chooseRole(key, b) {
+  if (!pickRole || roleCard.dataset.busy) return;
+  if (!DEMO_ALLOWED_ROLES.includes(key)) {
+    b.animate([{ translate: '0 0' }, { translate: '-6px 0' }, { translate: '6px 0' }, { translate: '-3px 0' }, { translate: '0 0' }], { duration: ROLE_DENY_SHAKE_MS });
+    return showRoleNotice();
+  }
+  const o = roleState.find(r => r.key === key), done = pickRole;
+  roleCard.dataset.busy = '1';
+  o.taken = Math.min(o.capacity, o.taken + 1);
+  b.querySelector('small').textContent = roleStatus(o);
+  b.classList.add('picked');
+  await wait(ROLE_PICK_HOLD_MS);
+  done?.();
+}
+function resetRoleCard() {
+  roleState.forEach((o, i) => o.taken = ROLE_OPTIONS[i].taken);
+  delete roleCard.dataset.busy;
+  clearTimeout(roleNoticeTimer);
+  roleCard.querySelector('.role-notice').classList.remove('show');
+  renderRoleButtons();
+}
+if (ROLE_OPEN_V26) {
+  roleCard.append(Object.assign(document.createElement('p'), { className: 'role-notice' }));
+  resetRoleCard();
+  // Arrow up/down move between the role buttons (Tab / Enter / Space work natively)
+  roleCard.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    const bs = [...roleCard.querySelectorAll('button:not(:disabled)')], i = bs.indexOf(document.activeElement);
+    bs[(i + (e.key === 'ArrowDown' ? 1 : -1) + bs.length) % bs.length]?.focus();
+    e.preventDefault();
+  });
+}
+// v25: the card rises in with a small bounce when it appears
+const popRoleCard = () => (sizeRoleHeads(), PIXEL_FONT_V28 && applyPixelFont(), ROLE_CARD_V25) && !roleOverlay.hidden && roleCard.animate(
+  [{ transform: 'translateY(24px) scale(.94)', opacity: 0 }, { transform: 'translateY(-3px) scale(1.02)', opacity: 1, offset: .7 }, { transform: 'none', opacity: 1 }],
+  { duration: ROLE_CARD_POP_MS, easing: 'ease-out' });
 const logoEl = document.getElementById('logo');
 const logoImg = logoEl.firstChild;
 logoImg.src = 'images/logo.png';
@@ -1473,8 +1929,10 @@ document.getElementById('outroTitle').textContent = OUTRO.title;
 document.getElementById('outroNote').textContent = OUTRO.note;
 prevBtn.setAttribute('aria-label', NAV_LABELS.prev);
 nextBtn.setAttribute('aria-label', NAV_LABELS.next);
-document.getElementById('pNick').textContent = '선택됨 · ' + PROSECUTOR_NICK;
-document.getElementById('dNick').textContent = '선택됨 · ' + DEFENDER_NICK;
+if (!ROLE_OPEN_V26) { // v26 builds the role buttons without nicknames
+  document.getElementById('pNick').textContent = '선택됨 · ' + PROSECUTOR_NICK;
+  document.getElementById('dNick').textContent = '선택됨 · ' + DEFENDER_NICK;
+}
 
 AVATARS.find(a => a.id === ME).label += ' (나)';
 const setMark = (id, text) => els[id].querySelector('.mark').textContent = text;
@@ -1574,6 +2032,47 @@ const B = BUBBLE_BORDER, BT = BUBBLE_TEXT;
   el.classList.toggle('patterned', FRAME_PATTERN);
   el.classList.toggle('dark', FRAME_FILL === 'dark');
 });
+// v29 gauge: ornate frame (no pattern band / L marks), x GAUGE_PANEL_SCALE, labels from GAUGE_LABELS, pixel font sized by H
+if (PIXEL_UI_V29) {
+  const k = GAUGE_PANEL_SCALE, O = GAUGE_ORNATE;
+  gauge.classList.remove('frame', 'patterned', 'dark');
+  gauge.classList.add('v29');
+  gauge.style.width = GAUGE.width * k + '%';
+  gauge.insertAdjacentHTML('beforeend', [0, 1, 2, 3].map(i => r7CornerSVG(i, 'g7g', 'g7-corner', '--g7-out')).join(''));
+  [['--g-k', k], ['--g7-r', O.radiusPx * k + 'px'], ['--g7-b', Math.round(O.borderPx * k) + 'px'], ['--g7-gap', Math.round(O.innerGapPx * k) + 'px'],
+   ['--g7-line', O.innerLinePx * k + 'px'], ['--g7-corner', O.cornerCqw * k + 'cqw'], ['--g7-out', Math.round(O.cornerOutPx * k) + 'px'],
+   ['--g-track', GAUGE_BAR.track], ['--g-cell-gap', GAUGE_BAR.cellGapPx + 'px']].forEach(([n, v]) => gauge.style.setProperty(n, v));
+  gauge.querySelectorAll('.g-row > span').forEach((el, i) => el.textContent = [GAUGE_LABELS.innocent, GAUGE_LABELS.protest][i]);
+}
+// Sizes from the text height H (px): font = whole multiple of 11, paddings/gaps from GAUGE_PADDING, bar = 1.5x the old height
+function layoutGauge29() {
+  if (!PIXEL_UI_V29) return;
+  const k = GAUGE_PANEL_SCALE, P = GAUGE_PADDING, W = stage.clientWidth;
+  const H = PIXEL29 && pixelFontOK(PIXEL_BOLD_FAMILY) ? px11(1.1 * k * W / 100) : Math.round(1.1 * k * W / 100);
+  if (PIXEL29 && pixelFontOK(PIXEL_BOLD_FAMILY)) {
+    gauge.classList.add('pf29');
+    gauge.style.fontFamily = `'${PIXEL_BOLD_FAMILY}', var(--font-title)`;
+    gauge.style.setProperty('--fb', PIXEL_FAUX_BOLD_PX + 'px');
+    [['--rib-c', ROLE_RIBBON_TEXT.color], ['--rib-s', ROLE_RIBBON_TEXT.shadow]].forEach(([n, v]) => gauge.style.setProperty(n, v));
+    gauge.querySelector('.frame-tab b').style.fontFamily = gauge.style.fontFamily; // .frame-tab b sets its own font shorthand
+  }
+  const tabFont = PIXEL29 ? px11(1.2 * k * W / 100) : Math.round(1.2 * k * W / 100);
+  const tab = gauge.querySelector('.frame-tab');
+  gauge.style.setProperty('--g-font', H + 'px');
+  gauge.style.setProperty('--g-tab-font', tabFont + 'px');
+  gauge.style.setProperty('--g-h', H + 'px');
+  // Ribbon reach below the top edge (45% of its height) + max(top padding, ribbon gap)
+  const tabH = tab.offsetHeight || tabFont * 1.8, reach = tabH * .45;
+  const line = Math.round(GAUGE_ORNATE.innerGapPx * k) + GAUGE_ORNATE.innerLinePx * k; // padding counts from the inner gold line
+  [['--g-pad-x', Math.round(P.x * H + line) + 'px'], ['--g-pad-top', Math.ceil(Math.max(reach + P.tabGapMin * H, line + P.top * H)) + 'px'],
+   ['--g-pad-bottom', Math.round(P.bottom * H + line) + 'px'], ['--g-row-gap', Math.round(P.rowGap * H) + 'px'], ['--g-label-bar', Math.round(P.labelToBar * H) + 'px'],
+   ['--g-num-w', Math.ceil(H * 1.3) + 'px'], ['--g-arrow-w', Math.ceil(.9 * k * W / 100) + 'px'], ['--g-bar-h', Math.round(1 * k * W / 100) + 'px']]
+    .forEach(([n, v]) => gauge.style.setProperty(n, v));
+}
+if (PIXEL_UI_V29) {
+  layoutGauge29();
+  addEventListener('resize', layoutGauge29);
+}
 
 // ----- Code-drawn furniture ('solid3d'): inline SVG in reference px of a FURNITURE_REF_WIDTH_PX-wide stage -----
 const fNum = n => +n.toFixed(2);
@@ -2996,13 +3495,16 @@ async function logoIntro(g) {
   await finished(logoEl.animate([{ opacity: 1, scale: 1 }, { opacity: 0, scale: .5 }],
                                 { duration: LOGO_OUT_MS, easing: 'ease-in', fill: 'forwards' }));
   if (g !== gen) return;
-  nextBtn.disabled = false; // ▶ picks the juror role, as before
+  nextBtn.disabled = ROLE_OPEN_V26 && !ROLE_NEXT_BUTTON_ENABLED; // ▶ picks the juror role, as before (v26: only if enabled)
+  await pixelFontsReady; // v28: the card shows only once the pixel fonts are in (or timed out)
+  if (g !== gen) return;
   endLogo();
 }
 function endLogo() {
   logoEl.getAnimations().forEach(an => an.cancel());
   logoEl.hidden = true;
   roleCard.style.visibility = '';
+  popRoleCard();
 }
 
 // Stages 0~13. name is shown as a subtitle when the stage starts (empty = no subtitle).
@@ -3272,8 +3774,10 @@ const STAGES = [
   { name: '', autoNext: true, waitsForInput: true, run: async g => { // 0 role select
     roleOverlay.classList.remove('fade');
     roleOverlay.hidden = false;
-    nextBtn.disabled = false; // ▶ picks the juror role (logoIntro handles ▶ while the logo is up)
+    if (ROLE_OPEN_V26) resetRoleCard();
+    nextBtn.disabled = ROLE_OPEN_V26 && !ROLE_NEXT_BUTTON_ENABLED; // ▶ picks the juror role (logoIntro handles ▶ while the logo is up)
     if (LOGO_INTRO_ENABLED) await logoIntro(g);
+    else { await pixelFontsReady; if (g !== gen) return; popRoleCard(); }
     if (g !== gen) return;
     await new Promise(r => pickRole = r);
     pickRole = null;
@@ -3547,7 +4051,7 @@ function goTo(i) {
   runStage(i);
 }
 
-document.getElementById('pickJuror').onclick = () => pickRole?.();
+if (!ROLE_OPEN_V26) document.getElementById('pickJuror').onclick = () => pickRole?.();
 prevBtn.onclick = () => {
   if (prevBtn.disabled) return;
   if (cur === 13 && TRAILER_ENABLED && TRAILER_POPUP_ENABLED && trPlaying) { trStart = 'popupNow'; return goTo(13); } // trailer or end card: back to the popup
@@ -3556,7 +4060,7 @@ prevBtn.onclick = () => {
 nextBtn.onclick = () => {
   if (nextBtn.disabled) return;
   if (lineSkip) return lineSkip();
-  if (pickRole) return pickRole();
+  if (pickRole) return ROLE_OPEN_V26 ? chooseRole(DEMO_PICK_ROLE, roleCard.querySelector(`button[data-key="${DEMO_PICK_ROLE}"]`)) : pickRole();
   stopPlayback(); // only matters if the safety timer enabled ▶ while the stage was still running
   runStage(cur + 1);
 };
