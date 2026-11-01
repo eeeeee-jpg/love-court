@@ -782,6 +782,12 @@ const JUDGE_AVATAR_RAISE_PCT = 3;        // judge sprite up (% of stage height):
 const JUDGE_DESK_CLIP_V6 = { x: 43, y: 20.9, w: 14, h: 7.1 }; // desk part redrawn over the judge: front edge down (bg-top)
 const JUDGE_NAMEPLATE = { xPct: 50, yPct: 21.2, widthPct: 6, fontCqw: 8 / 4.5 * 0.5 }; // on the desk top's front edge; 75% wide, old text size
 const JUDGE_LABEL_V6 = { scale: 0.85, placement: 'side', topPct: 18, gapPx: 6 }; // 'side' = right of the head | 'above'
+// ----- Fix v11: advocate nameplate fitted to the desk top's center-facing edge (the perspective trapezoid side): parallel to it,
+// its outer long side NAMEPLATE_EDGE_INSET_PX inside the edge. false = v9 (upright, bounding-box placement) -----
+const NAMEPLATE_FIT_V11 = true;
+const NAMEPLATE_ALONG_PCT = 50;        // center along the edge (0 = far end, 100 = camera end)
+const NAMEPLATE_LENGTH_PCT = 62;       // plate length at most this share of the edge (shortened automatically)
+const NAMEPLATE_PROP_PUSH_MAX_PX = 8;  // props overlapping the plate move toward the seat by at most this beyond the v9 move (ref px)
 // ----- Fix v10: walkers face where they go; the judge enters by one door and leaves by another, walking side-on.
 // false = before -----
 const WALK_FIX_V10 = true;
@@ -1580,14 +1586,35 @@ function deskSVG2(W, H, mirror, role, box) {
   const np = NAMEPLATES.find(n => n.scene === 'court' && n.role === role);
   const thick = np.h * FURNITURE_REF_WIDTH_PX / 100, ins = PROPS_INSET, edge9 = FIX4 && SEATED_FIX_V9 && NAMEPLATE_SIDE_EDGE === 'away_from_avatar';
   let plen = np.w * FURNITURE_REF_WIDTH_PX / 100;
+  // v11: center-facing edge of the top (corners after perspective, screen-local px; mirrored = the defender's left edge)
+  const FIT11 = NAMEPLATE_FIT_V11 && edge9;
+  let fit = null;
+  if (FIT11) {
+    const A = pt([tw, 0]), B = pt([tw, th]), L = Math.hypot(B[0] - A[0], B[1] - A[1]);
+    const u = [(B[0] - A[0]) / L, (B[1] - A[1]) / L];                       // far end -> camera end
+    fit = { A, u, L, n: mirror ? [u[1], -u[0]] : [-u[1], u[0]],              // inward normal (into the top)
+            deg: Math.atan2(A[0] - B[0], B[1] - A[1]) * 180 / Math.PI };     // tilt from vertical, + = far end leans right
+    plen = Math.min(plen, NAMEPLATE_LENGTH_PCT / 100 * L);
+  }
+  const capLen = plen;
+  // Plate center: NAMEPLATE_ALONG_PCT along the edge, its outer long side NAMEPLATE_EDGE_INSET_PX inside it
+  const fitCenter = () => { const m = NAMEPLATE_ALONG_PCT / 100 * fit.L, d = NAMEPLATE_EDGE_INSET_PX + thick / 2;
+                            return [fit.A[0] + fit.u[0] * m + fit.n[0] * d, fit.A[1] + fit.u[1] * m + fit.n[1] * d]; };
+  const unpersp = ([x, y]) => { // inverse of persp (screen-local -> top-local px)
+    const P = FURNITURE_PERSPECTIVE, k = 1 - P.strength * (yBot - (box.y + y * ky)) / (yBot - P.vanishYPct);
+    return [(P.vanishXPct + (box.x + x * kx - P.vanishXPct) / k - box.x) / kx, y];
+  };
   // v3/v4 nameplate spot (from the outer edge / along the top); v9: center-facing edge, length middle
   const across = edge9 ? tw - NAMEPLATE_EDGE_INSET_PX - thick / 2 : FIX4 ? NAMEPLATE_V4.acrossPct / 100 * tw : tw - ins - thick / 2;
-  const cx = Math.min(Math.max(mirror ? x0 + tw - across : x0 + across, x0 + Math.min(ins, NAMEPLATE_EDGE_INSET_PX) + thick / 2),
-                      x0 + tw - Math.min(ins, NAMEPLATE_EDGE_INSET_PX) - thick / 2);
-  const cyFor = l => edge9 ? th / 2 : FIX4 ? th - ins - l / 2 : Math.min(Math.max(NAMEPLATE_V3.alongPct / 100 * th, ins + l / 2), th - ins - l / 2);
+  const cx = FIT11 ? unpersp(fitCenter())[0]
+                   : Math.min(Math.max(mirror ? x0 + tw - across : x0 + across, x0 + Math.min(ins, NAMEPLATE_EDGE_INSET_PX) + thick / 2),
+                              x0 + tw - Math.min(ins, NAMEPLATE_EDGE_INSET_PX) - thick / 2);
+  const cyFor = l => FIT11 ? unpersp(fitCenter())[1] : edge9 ? th / 2 : FIX4 ? th - ins - l / 2
+                   : Math.min(Math.max(NAMEPLATE_V3.alongPct / 100 * th, ins + l / 2), th - ins - l / 2);
   // Props; with the v9 plate, any that overlap it move toward the seat (sizes unchanged). Returns the svg and how many still overlap
   const layoutProps = l => {
-    const pr = { x0: cx - thick / 2 - 1, x1: cx + thick / 2 + 1, y0: cyFor(l) - l / 2, y1: cyFor(l) + l / 2 + (FIX4 ? NAMEPLATE_V4.standPx : 0) };
+    const tp = FIT11 ? l / 2 * Math.abs(Math.sin(fit.deg * Math.PI / 180)) : 0; // tilted plate's extra width
+    const pr = { x0: cx - thick / 2 - 1 - tp, x1: cx + thick / 2 + 1 + tp, y0: cyFor(l) - l / 2, y1: cyFor(l) + l / 2 + (FIX4 ? NAMEPLATE_V4.standPx : 0) };
     let hits = 0;
     const svg = (DESK_PROPS[role] ?? []).map(it => {
       const [u, v] = FIX4 ? it.v4 : BALANCE_FIX ? it.v3 : it.v2, w = it.w / 100 * ow, h = it.h / 100 * oh;
@@ -1601,7 +1628,14 @@ function deskSVG2(W, H, mirror, role, box) {
         cy = Math.min(Math.max(cy, hy), th - hy - drop);
         if (edge9) {
           const ex = hx - PROPS_INSET, over = () => cx + ex > pr.x0 && cx - ex < pr.x1 && cy + hy - PROPS_INSET + drop > pr.y0 && cy - hy + PROPS_INSET < pr.y1;
-          if (over()) { cx = mirror ? pr.x1 + ex + 2 : pr.x0 - ex - 2; clampX(); if (over()) hits++; }
+          if (over()) {
+            // v11: the v9 move (clear of the upright plate) plus at most NAMEPLATE_PROP_PUSH_MAX_PX for the tilt
+            const to = mirror ? pr.x1 + ex + 2 : pr.x0 - ex - 2, upright = mirror ? pr.x1 - tp + ex + 2 : pr.x0 + tp - ex - 2;
+            const push = Math.abs(upright - cx) + NAMEPLATE_PROP_PUSH_MAX_PX;
+            cx = FIT11 ? cx + Math.max(-push, Math.min(push, to - cx)) : to;
+            clampX();
+            if (over()) hits++;
+          }
         }
       }
       return propSVG(it, w, h, ...persp([cx, cy]));
@@ -1610,17 +1644,23 @@ function deskSVG2(W, H, mirror, role, box) {
   };
   let laid = layoutProps(plen);
   // Still overlapping: shorten the plate, in 5% steps, down to NAMEPLATE_MIN_LENGTH_SCALE
-  for (let k = .95; edge9 && laid.hits && k >= NAMEPLATE_MIN_LENGTH_SCALE - 1e-9; k -= .05) laid = layoutProps(plen = np.w * FURNITURE_REF_WIDTH_PX / 100 * k);
+  for (let k = .95; edge9 && laid.hits && k >= NAMEPLATE_MIN_LENGTH_SCALE - 1e-9; k -= .05) laid = layoutProps(plen = capLen * k);
   if (edge9 && plen < np.w * FURNITURE_REF_WIDTH_PX / 100) np.w = plen * 100 / FURNITURE_REF_WIDTH_PX;
-  if (laid.hits) dbg('nameplate still overlaps', laid.hits, 'prop(s) on', role);
+  if (laid.hits && DEBUG_LOG) console.log('[court] nameplate still overlaps', laid.hits, 'prop(s) on', role);
   const props = PROPS_ENABLED ? laid.svg : '';
   let stand = '';
   if (BALANCE_FIX) { // v3: nameplate on the top's inner side, tilted like the desk's long edges; v4: standing at the front end, upright
     const P = FURNITURE_PERSPECTIVE, cy = cyFor(plen);
-    const [lx, ly] = persp([cx, cy]);
+    const [lx, ly] = FIT11 ? fitCenter() : persp([cx, cy]);
     np.x = box.x + lx * kx;
     np.y = box.y + ly * ky;
-    if (FIX4) { // small dark base peeking out below the plate (toward the camera), with its floor shadow
+    if (FIT11) { // plate parallel to the edge: base and shadow tilt with it
+      const sp = NAMEPLATE_V4.standPx, at = (dx, dy, inner) => `<g transform="translate(${fNum(lx + dx)} ${fNum(ly + dy)}) rotate(${fNum(fit.deg)})">${inner}</g>`;
+      stand = at(PROP_SHADOW.dx, PROP_SHADOW.dy, fRect('shadow', -thick / 2, -plen / 2 + sp, thick, plen))
+            + at(0, 0, fRect('frontDark', -thick / 2 - 1, -plen / 2 + sp, thick + 2, plen));
+      NAMEPLATE_ROTATION[role] += fit.deg;
+      if (DEBUG_LOG) console.log('[court] nameplate', role, 'length', +(plen / fit.L * 100).toFixed(1) + '% of the edge', 'rotation', +NAMEPLATE_ROTATION[role].toFixed(2));
+    } else if (FIX4) { // small dark base peeking out below the plate (toward the camera), with its floor shadow
       const sp = NAMEPLATE_V4.standPx;
       stand = fRect('shadow', lx - thick / 2 + PROP_SHADOW.dx, ly - plen / 2 + sp + PROP_SHADOW.dy, thick, plen)
             + fRect('frontDark', lx - thick / 2 - 1, ly - plen / 2 + sp, thick + 2, plen);
