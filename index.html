@@ -796,6 +796,11 @@ const JUDGE_AVATAR_RAISE_PCT = 3;        // judge sprite up (% of stage height):
 const JUDGE_DESK_CLIP_V6 = { x: 43, y: 20.9, w: 14, h: 7.1 }; // desk part redrawn over the judge: front edge down (bg-top)
 const JUDGE_NAMEPLATE = { xPct: 50, yPct: 21.2, widthPct: 6, fontCqw: 8 / 4.5 * 0.5 }; // on the desk top's front edge; 75% wide, old text size
 const JUDGE_LABEL_V6 = { scale: 0.85, placement: 'side', topPct: 18, gapPx: 6 }; // 'side' = right of the head | 'above'
+// ----- Fix v21: prosecutor plate = defender plate size (text centered, extra room = side padding); judge plates (top view and
+// close-up) wider side padding. Builds on v15/v18. false = before -----
+const NAMEPLATE_ADJUST_V21 = true;
+const NAMEPLATE_MATCH_ADVOCATES = true;
+const NAMEPLATE_PADDING_JUDGE = { vertical: 0.20, horizontal: 1.40 }; // x H, each side (inner length = W + 2.80 H)
 // ----- Fix v18 (top view only): judge plate on the bench's front panel; judge shown down to the shoulders; lighter glasses.
 // Close-up judge, plate and gavel unchanged. false = before -----
 const JUDGE_TOPVIEW_V18 = true;
@@ -1650,9 +1655,10 @@ function plateMetrics(txt, f) { // px metrics at font size f
 }
 const plateFrameEm = () => NAMEPLATE_FRAME_INNER_EM.base + NAMEPLATE_FRAME_INNER_EM.border + NAMEPLATE_FRAME_INNER_EM.line;
 const plateOrnEm = n => n.ornament ? NAMEPLATE_ORNAMENT_EM.width + NAMEPLATE_ORNAMENT_EM.gap : 0; // end curls, outside the inner area
+const platePadding = n => NAMEPLATE_ADJUST_V21 && n.role === 'judge' ? NAMEPLATE_PADDING_JUDGE : NAMEPLATE_PADDING;
 if (NAMEPLATE_SIZE_V15) {
-  const P = NAMEPLATE_PADDING;
   NAMEPLATES.forEach(n => {
+    const P = n.pad = platePadding(n);
     const f = n.v13 ? n.font : (n.font ?? (n.h ?? n.w / 4.5) * 0.5) * NAMEPLATE_SCALE; // cqw
     const m = plateMetrics(NAMEPLATE_TEXT[n.role], f), H = m.iA + m.iD, W = m.iL + m.iR, fr = 2 * (plateFrameEm() + plateOrnEm(n)) * f;
     // Ink center vs the centered text box: x from the ink's side bearings, y from the content area (font box) centered in the line
@@ -1675,6 +1681,12 @@ if (JUDGE_TOPVIEW_V18 && FIX6) {
   if (k < 1) { Object.assign(jp, { w: jp.w * k, h: h * k, font: jp.font * k }); judgePlateV18.scale = NAMEPLATE_SCALE * k; }
   judgePlateV18.fits = fit >= k - 1e-9;
   Object.assign(jp, { x: T.xPct, y: (F.y0 + F.y1) / 2, stand: false, wall: true });
+}
+// v21: the prosecutor plate takes the defender plate's size (same text size); its text stays centered
+if (NAMEPLATE_ADJUST_V21 && NAMEPLATE_MATCH_ADVOCATES && NAMEPLATE_SIZE_V15) {
+  const role = r => NAMEPLATES.find(n => n.scene === 'court' && n.role === r), pr = role('prosecutor'), df = role('defender');
+  Object.assign(pr, { w: Math.max(pr.w, df.w), h: Math.max(pr.h, df.h), matchOf: 'defender' });
+  Object.assign(df, { w: pr.w, h: pr.h });
 }
 if (FIX4) FURNITURE_PERSPECTIVE.strength = FURNITURE_PERSPECTIVE_STRENGTH_V4;
 const PROPS_INSET = FIX4 ? PROPS_INSET_PX_V4 : PROPS_INSET_PX;
@@ -2048,10 +2060,13 @@ function measurePlate(el) {
       Object.assign(i.style, { left: ink.x0 + 'px', top: ink.y0 + 'px', width: ink.x1 - ink.x0 + 'px', height: ink.y1 - ink.y0 + 'px' });
     }
     const g = { top: ink.y0 - inner.y0, bottom: inner.y1 - ink.y1, left: ink.x0 - inner.x0, right: inner.x1 - ink.x1 };
-    const r = k => +(g[k] / H).toFixed(3), P = NAMEPLATE_PADDING;
+    const r = k => +(g[k] / H).toFixed(3), P = { vertical: +el.dataset.padv, horizontal: +el.dataset.padh };
+    const tolH = P.horizontal > 1 ? .03 : el.dataset.matchOf ? Infinity : .03; // a matched plate's side padding may be larger
     const ok = Math.abs(r('top') - P.vertical) <= .02 && Math.abs(r('bottom') - P.vertical) <= .02
-            && Math.abs(r('left') - P.horizontal) <= .02 && Math.abs(r('right') - P.horizontal) <= .02;
+            && r('left') >= P.horizontal - .03 && r('right') >= P.horizontal - .03
+            && Math.abs(r('left') - P.horizontal) <= tolH && Math.abs(r('right') - P.horizontal) <= tolH;
     return { plate: (el.parentElement.id === 'closeup' ? 'closeup ' : 'top ') + sp.textContent, H: +H.toFixed(2),
+             length: +PW.toFixed(2), thickness: +PH.toFixed(2),
              top: +g.top.toFixed(2), bottom: +g.bottom.toFixed(2), left: +g.left.toFixed(2), right: +g.right.toFixed(2),
              'top/H': r('top'), 'bottom/H': r('bottom'), 'left/H': r('left'), 'right/H': r('right'), ok, _g: g, _H: H, _PW: PW, _PH: PH };
   }
@@ -2059,14 +2074,27 @@ function measurePlate(el) {
 // Gold border widths snap to device pixels on small plates, which widens the inner area a little: measure, then resize each plate
 // by the difference so the gaps land on NAMEPLATE_PADDING (re-run on resize)
 function fitPlatePadding() {
-  const P = NAMEPLATE_PADDING;
-  document.querySelectorAll('.nameplate.v15').forEach(el => {
+  const plates = [...document.querySelectorAll('.nameplate.v15')];
+  plates.filter(el => !el.dataset.matchOf).forEach(el => {
     el.style.width = el.dataset.w + 'cqw';
     el.style.height = el.dataset.h + 'cqw';
-    const m = measurePlate(el), perCqw = m._PW / el.dataset.w; // px per cqw here
-    const ex = (m._g.left + m._g.right) / 2 - P.horizontal * m._H, ey = (m._g.top + m._g.bottom) / 2 - P.vertical * m._H;
+    const m = measurePlate(el), perCqw = m._PW / el.dataset.w, ph = +el.dataset.padh, pv = +el.dataset.padv; // px per cqw here
+    const ex = (m._g.left + m._g.right) / 2 - ph * m._H, ey = (m._g.top + m._g.bottom) / 2 - pv * m._H;
     el.style.width = (m._PW - 2 * ex) / perCqw + 'cqw';
     el.style.height = (m._PH - 2 * ey) / perCqw + 'cqw';
+  });
+  // Matched plates copy their reference plate's corrected size. The two texts' ink heights differ a little, so the shared
+  // thickness is set where the pair's average top/bottom ratio is the target (each stays within a few hundredths of it)
+  plates.filter(el => el.dataset.matchOf).forEach(el => {
+    const ref = plates.find(p => p.dataset.role === el.dataset.matchOf && p.parentElement === el.parentElement);
+    if (!ref) return;
+    el.style.width = ref.style.width;
+    el.style.height = ref.style.height;
+    const pair = [el, ref].map(measurePlate), pv = +ref.dataset.padv, perCqw = pair[1]._PW / parseFloat(ref.style.width);
+    const avg = pair.reduce((t, m) => t + (m._g.top + m._g.bottom) / 2 / m._H, 0) / 2;
+    const slope = pair.reduce((t, m) => t + 1 / (2 * m._H), 0) / 2; // d(avg ratio) / d(inner height px)
+    const h = (pair[1]._PH + (pv - avg) / slope) / perCqw + 'cqw';
+    el.style.height = ref.style.height = h;
   });
   console.table(measurePlates().map(({ _g, _H, _PW, _PH, ...row }) => row));
 }
@@ -2133,7 +2161,7 @@ NAMEPLATES.forEach(n => {
     el.style.setProperty('--tx', n.shift[0] + 'em');
     el.style.setProperty('--ty', n.shift[1] + 'em');
     el.style.setProperty('--inner-off', NAMEPLATE_FRAME_INNER_EM.line + 'em');
-    Object.assign(el.dataset, { w: n.w, h: n.h ?? n.w / 4.5 }); // cqw, before the post-layout padding correction
+    Object.assign(el.dataset, { w: n.w, h: n.h ?? n.w / 4.5, padv: n.pad.vertical, padh: n.pad.horizontal, matchOf: n.matchOf ?? '' }); // cqw, before the post-layout correction
     el.classList.toggle('dbg-pad', DEBUG_NAMEPLATE_PADDING);
   }
   if (rot !== undefined && !stacked) el.style.setProperty('--rot', rot + 'deg');
