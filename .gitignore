@@ -1,8 +1,10 @@
 .env
 .env.*
+!.env.example
 *.key
 secrets/
 node_modules/
+.vscode/
 .DS_Store
 reference/
 *.psd
