@@ -1,12 +1,13 @@
 # love-court: "Love Trial" demo prototype
 
-Demo video of the "Love Trial" feature (side content for a dating app), seen from one juror ("me"). Everyone else is a scripted NPC. Real-time play, multi-user and deployment are out of scope.
+Demo video of the "Love Trial" feature (side content for a dating app), seen from one juror ("me"). Everyone else is a scripted NPC. Real-time play, multi-user and deployment are out of scope for the demo.
 
 ## Rules
 - Single file index.html. No external libraries, fonts, images or network requests (the AI verdict hookup is the only exception, needs approval). No emoji: draw shapes in CSS/SVG.
 - English for code, comments and docs. Text shown on screen stays Korean and lives in SCENARIO CONFIG; internal keys are English (judge, prosecutor, defender, juror).
 - Change only what was asked. When done, report only the changed file paths.
 - Branches: `scenario` = scenario work, `design` = design work, merged into `main`. Check the current branch before starting.
+- Direction: this is a demo first; a fully playable multi-user game follows. Keep scripted parts (NPC lines, NPC votes, auto entry) behind demo-mode flags so they can be replaced by real user input later.
 
 ## Case and vote
 - Case: "12-hour no-contact". Options: A not guilty / B protest justified.
