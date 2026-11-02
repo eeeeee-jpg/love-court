@@ -854,6 +854,12 @@ const CASE = {
   issues: ['12시간 연락이 끊긴 것은 상대에 대한 배려 부족인가?', '밤새 연락을 시도하고 화를 낸 것은 정당한 걱정인가, 지나친 구속인가?'],
   options: OPTIONS,
 };
+// Case generation: on load, replace CASE title/summary/issues, OPENING and ISSUE_DEBATE titles with /api/generate output.
+// Any failure keeps the fixed case above. Debate lines, shouts and verdict texts stay fixed
+const CASE_GENERATION_ENABLED = false;
+const CASE_GENERATION_URL = 'http://localhost:8787/api/generate';
+const CASE_SUMMARY_FORMAT = 'A의 입장: {a} B의 입장: {b}';
+const ISSUE_TITLE_FORMAT = '쟁점 {n}. {text}';
 const OPENING = {
   prosecutor: '피고 A는 연락이 닿지 않는 상황을 미리 알리지 않아, 상대가 밤새 불안에 떨게 했습니다. 이는 배려의 문제라고 주장합니다.',
   defender: '피고는 배터리가 방전된 채 잠들었을 뿐입니다. 고의 없는 일에 책임을 묻는 것은 과하다고 주장합니다.',
@@ -905,10 +911,10 @@ const GAUGE_LINES = [
   { stage: 6, speaker: 'prosecutor', side: 'protest',  delta: 8 },  // issue 2
   { stage: 7, speaker: 'prosecutor', side: 'protest',  delta: 5 },  // closing
   { stage: 7, speaker: 'defender',   side: 'innocent', delta: 8 },  // closing
-  { stage: 8, speaker: 'j1',         side: 'innocent', delta: 3 },  // 별빛
-  { stage: 8, speaker: 'j2',         side: 'innocent', delta: 5 },  // 모카
-  { stage: 8, speaker: 'j3',         side: 'innocent', delta: 3 },  // 두부
-  { stage: 8, speaker: 'j4',         side: 'protest',  delta: 7 },  // 감자
+  { stage: 8, speaker: 'j1',         side: 'innocent', delta: 3 },  // 이창식
+  { stage: 8, speaker: 'j2',         side: 'innocent', delta: 5 },  // 한가람
+  { stage: 8, speaker: 'j3',         side: 'innocent', delta: 3 },  // 최강두
+  { stage: 8, speaker: 'j4',         side: 'protest',  delta: 7 },  // 김정식
 ];
 // Closing: final statements + judge's instructions (placeholder)
 const CLOSING = [
@@ -1079,13 +1085,13 @@ const AVATARS = [
   { id: 'prosecutor', label: '검사',   x: 14, y: 52 },
   { id: 'defender',   label: '변호인', x: 86, y: 52 },
   // 3 in the back row, 4 in front: x is staggered so front-row heads fall between back-row ones
-  { id: 'j1', label: '배심원 / 별빛', x: 37, y: 66, color: '#d9534f' },
-  { id: 'j2', label: '배심원 / 모카', x: 50, y: 66, color: '#a0522d' },
-  { id: 'j3', label: '배심원 / 두부', x: 63, y: 66, color: '#e8e2d0' },
-  { id: 'j4', label: '배심원 / 감자', x: 31, y: 77, color: '#c9a227' },
-  { id: 'j5', label: '배심원 / 하늘', x: 44, y: 77, color: '#4a90d9' },
-  { id: 'j6', label: '배심원 / 보리', x: 56, y: 77, color: '#6aa84f' },
-  { id: 'j7', label: '배심원 / 토리', x: 69, y: 77, color: '#8e6bbf' },
+  { id: 'j1', label: '배심원 / 이창식', x: 37, y: 66, color: '#d9534f' },
+  { id: 'j2', label: '배심원 / 한가람', x: 50, y: 66, color: '#a0522d' },
+  { id: 'j3', label: '배심원 / 최강두', x: 63, y: 66, color: '#e8e2d0' },
+  { id: 'j4', label: '배심원 / 김정식', x: 31, y: 77, color: '#c9a227' },
+  { id: 'j5', label: '배심원 / 제임스', x: 44, y: 77, color: '#4a90d9' },
+  { id: 'j6', label: '배심원 / 올리비아', x: 56, y: 77, color: '#6aa84f' },
+  { id: 'j7', label: '배심원 / 강주미', x: 69, y: 77, color: '#8e6bbf' },
 ];
 // Props: top-left x, y and w, h (%). Without z, depth comes from the bottom edge (y+h) → in front of a seat it hides the lower body
 const PROPS = [
@@ -1164,6 +1170,11 @@ const JUROR_TORSO_HIDDEN_PCT = 40;  // lower part of each juror's torso behind t
 const JUROR_OVERLAP_PCT = 20;       // max share of a back-row juror hidden by the front bench (the row rises if more)
 const JUROR_SHIFT_Y_PCT_V4 = -5;    // front bench top moves up this far from its original y (clears the wide-shot dialogue box)
 const JUROR_LABEL_V3 = { fontScale: 0.52, roleScale: '0.72em', padding: '.1em .45em', bgOpacity: 0.45, gapPx: 2, zigzagPx: 10 }; // gap + zigzag <= 12px above the head
+// Juror label v33: bigger "배심원 / name" labels; both juror rows (avatars + benches) spread from JUROR_CENTER_X to keep them apart.
+// false = JUROR_LABEL_V3.fontScale and the spacing above
+const JUROR_LABEL_V33 = true;
+const JUROR_LABEL_FONT_SCALE_V33 = 0.68; // v3 0.52 (x1.3)
+const JUROR_SPREAD_V33 = 1.1;            // juror x distance from the center and bench width x this
 // v2/v3: prop sizes stay as in DESK (old top); v2/v3 = center in % of that version's top, clear of the seated avatar's head/arms
 const DESK_PROPS = {
   prosecutor: [
@@ -1265,11 +1276,25 @@ const NPC_VOTE_MS = 700;
 // Gavel sound (Web Audio) + screen shake. false = visible gavel motion only, no sound or shake
 const GAVEL_ENABLED = true;
 const GAVEL_GAP_MS = 450; // closing line strike (stage 12)
+// Sound files in sounds/: gavel clip on the 3 verdict strikes, crowd noise on stages 0~1, alien -> angry cat in the trailer.
+// false = the synthesized gavel only, no file sounds
+const SOUND_FX_ENABLED = true;
+const SFX_VOLUME = { noise: 0.15, gavel: 1, alien: 0.5, cat: 0.8 };
+const GAVEL_CLIP_MS = 400;          // gavel.mp3 holds 2 strikes: play only this much from the start (tune by ear)
+const NOISE_FADE_MS = 1500;         // crowd noise fade-out when stage 2 (judge enters) starts
+const TRAILER_SFX_SWITCH_LINE = 3;  // trailer line (1-based) where alien.mp3 stops and angry-cat.mp3 plays
+// Gavel and crowd noise get a measured gain so their RMS level equals alien.mp3 at SFX_VOLUME.alien (needs the page over http;
+// on file:// or any load error the SFX_VOLUME values above are used). false = SFX_VOLUME values
+const SFX_MATCH_ALIEN = true;
+const SFX_MAX_GAIN = 8; // the gain is also capped so the peak stays under 1 (no clipping)
 // Close-up gavel, 3 strikes after the verdict reading. x, y = sound block center on the desk top (% of image);
 // length = gavel length, block = sound block width (cqw); raiseDeg = lift angle around the grip end; times in ms
 const GAVEL = { x: 41, y: 55.5, length: 8, block: 3, raiseDeg: 50, raiseMs: 250, strikeMs: 100, gapMs: 700, shakeMs: 250, pauseMs: 1000 };
 // TTS: each utterance ends on onend, onerror or this timer (chars × ms + 1500), whichever comes first
 const SPEECH_MS_PER_CHAR = 250;
+// Verdict reading (stage 11) via the local server's OpenAI TTS; any failure falls back to the browser TTS (speak)
+const TTS_API_ENABLED = true;
+const TTS_API_URL = 'http://localhost:8787/api/tts';
 const SAFETY_UNLOCK_MS = 60000; // a stage that hasn't finished by then (except ones waiting for input) enables ▶ anyway
 const DEBUG_LOG = true;         // console logs for stages and the verdict sequence
 // Verdict reaction (stage 12 start): the winner jumps under fireworks and floats away with balloons,
@@ -1419,6 +1444,9 @@ const TRAILER_VIGNETTE = 0.7;      // edge darkness
 // Popup before the trailer (stage 13): waits for a click. false: the trailer plays as soon as stage 13 starts
 const TRAILER_POPUP_ENABLED = true;
 const TRAILER_POPUP_NEXT_BUTTON_ENABLED = false; // true: next button / right arrow on the popup works like a click
+// TEMP: case generation API test panel (top-right). Delete with its block at the end of the script
+const TEST_PANEL_ENABLED = false;
+const TEST_PANEL_URL = 'http://localhost:8787/api/generate'; // absolute so it works from any page port
 const TRAILER_REPLAY_BUTTON = true;              // small replay button on the end card
 const TRAILER_POPUP_DELAY_MS = 400;              // after stage 13 starts (the adjournment has ended)
 const TRAILER_POPUP_WIDTH_PCT = 52;
@@ -1979,6 +2007,33 @@ if (CASE_PANEL_STYLE === 'document') {
 Object.assign(casePanel.style, { left: '50%', top: caseArea / 2 + '%', width: CASE_PANEL.widthPct + '%', height: 'auto' });
 [['--case-title', CASE_PANEL.titleCqw], ['--case-body', CASE_PANEL.bodyCqw], ['--case-issue', CASE_PANEL.issueCqw],
  ['--case-dim', CASE_BACKDROP_DIM], ['--case-blur', CASE_BACKDROP_BLUR_PX + 'px']].forEach(([k, v]) => stage.style.setProperty(k, v));
+// Swap in a generated case (CASE_GENERATION_ENABLED). Returns false and changes nothing when the shape is wrong
+function applyGeneratedCase(r) {
+  const str = v => typeof v === 'string' && v.trim() !== '';
+  if (!r || !str(r.title) || !str(r.positionA) || !str(r.positionB) || !Array.isArray(r.issues) || !r.issues.length || !r.issues.every(str)) return false;
+  CASE.title = r.title;
+  CASE.summary = CASE_SUMMARY_FORMAT.replace('{a}', r.positionA).replace('{b}', r.positionB);
+  CASE.issues = r.issues.slice();
+  OPENING.prosecutor = r.positionB; // prosecutor argues B's side, defender A's
+  OPENING.defender = r.positionA;
+  // shortcut: only the first ISSUE_DEBATE.length issues get a debate block (lines stay fixed); generating lines needs a bigger API
+  ISSUE_DEBATE.forEach((d, i) => { if (r.issues[i]) d.title = ISSUE_TITLE_FORMAT.replace('{n}', i + 1).replace('{text}', r.issues[i]); });
+  document.getElementById('caseTitle').textContent = CASE.title;
+  [casePanel, caseBody].forEach(root => {
+    root.querySelectorAll('h2').forEach(h => h.textContent = CASE.title);
+    const p = root.querySelector('p');
+    if (p) p.textContent = CASE.summary;
+  });
+  const ol = casePanel.querySelector('ol') || caseBody.querySelector('ol');
+  ol.replaceChildren(...CASE.issues.map(t => tag('li', t)));
+  return true;
+}
+if (CASE_GENERATION_ENABLED) {
+  fetch(CASE_GENERATION_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'generate_case', payload: null }) })
+    .then(res => res.ok ? res.json() : Promise.reject(new Error('HTTP ' + res.status)))
+    .then(data => { if (!applyGeneratedCase(data && data.result)) throw new Error('bad case shape'); })
+    .catch(err => console.warn('[case generation] fixed case kept:', err.message));
+}
 // Case panel: shrink the text in 4% steps, then tighten the line height, until it fits CASE_PANEL.maxHeightPct (needs the panel shown)
 function fitCasePanel() {
   const max = stage.clientHeight * Math.min(CASE_PANEL.maxHeightPct, caseArea - 8) / 100; // 8: room for the tab/ribbon and seal overhang
@@ -2478,6 +2533,11 @@ if (BALANCE_FIX) {
   // back row lowered until its bench bottom meets the front bench top. Entry walks end on these seats
   const jurors = AVATARS.filter(a => a.color), ys = [...new Set(jurors.map(a => a.y))].sort((a, b) => a - b);
   const benches = PROPS.filter(p => p.cls === 'bench').sort((a, b) => a.y - b.y);
+  if (JUROR_LABEL_V33) {
+    const spread = x => JUROR_CENTER_X + (x - JUROR_CENTER_X) * JUROR_SPREAD_V33;
+    jurors.forEach(a => a.x = spread(a.x));
+    benches.forEach(b => { b.x = spread(b.x); b.w *= JUROR_SPREAD_V33; });
+  }
   const rowMove = (y0, k, y1, bench) => {
     const mx = x => JUROR_CENTER_X + (x - JUROR_CENTER_X) * k, my = y => y1 + (y - y0) * k;
     jurors.filter(a => a.y === y0).forEach(a => Object.assign(a, { x: mx(a.x), y: y1, jscale: k }));
@@ -2528,7 +2588,7 @@ if (BALANCE_FIX) {
   court.classList.toggle('jl-stacked', JUROR_LABEL_LAYOUT === 'stacked');
   stage.classList.add('fix-v3');
   stage.style.setProperty('--dlg-wide-k', DIALOGUE_BOX.wideHeightScale);
-  [['--jl3-k', JUROR_LABEL_V3.fontScale], ['--jl3-role', JUROR_LABEL_V3.roleScale], ['--jl3-pad', JUROR_LABEL_V3.padding],
+  [['--jl3-k', JUROR_LABEL_V33 ? JUROR_LABEL_FONT_SCALE_V33 : JUROR_LABEL_V3.fontScale],['--jl3-role', JUROR_LABEL_V3.roleScale], ['--jl3-pad', JUROR_LABEL_V3.padding],
    ['--jl3-bg', JUROR_LABEL_V3.bgOpacity], ['--jl3-gap', JUROR_LABEL_V3.gapPx + 'px']].forEach(([k, v]) => court.style.setProperty(k, v));
 }
 if (FIX4) {
@@ -2971,6 +3031,31 @@ function speak(text) {
     speechSynthesis.speak(u);
   });
 }
+// Audio blob URL for a line from /api/tts, cached per text so the reading can prefetch every line
+const ttsCache = new Map();
+function ttsFetch(text) {
+  if (!ttsCache.has(text)) {
+    const p = fetch(TTS_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) })
+      .then(res => res.ok ? res.blob() : Promise.reject(new Error('HTTP ' + res.status)))
+      .then(b => URL.createObjectURL(b));
+    p.catch(() => ttsCache.delete(text)); // retry next time
+    ttsCache.set(text, p);
+  }
+  return ttsCache.get(text);
+}
+// Same contract as speak(): resolves with 'audio' when played, otherwise falls back to speak(text)
+async function speakVerdict(text) {
+  if (!TTS_API_ENABLED) return speak(text);
+  try {
+    const url = await ttsFetch(text);
+    const a = speakVerdict.current = new Audio(url);
+    await new Promise((ok, fail) => { a.onended = ok; a.onerror = () => fail(new Error('audio error')); a.play().catch(fail); });
+    return 'audio';
+  } catch (e) {
+    console.warn('[tts] browser TTS fallback:', e.message);
+    return speak(text);
+  }
+}
 
 let audioCtx = null;
 function gavelSound() {
@@ -3005,6 +3090,102 @@ function setGavelUp(up, ms) {
   gavelEl.classList.toggle('up', up);
   closeJudge.classList.toggle('gavel-up', up);
 }
+// File sounds (SOUND_FX_ENABLED): one reused element per file
+const sfx = {};
+function sfxAudio(name, vol, loop = false) {
+  const a = sfx[name] ??= new Audio('sounds/' + name);
+  a.volume = vol;
+  a.loop = loop;
+  return a;
+}
+function sfxPlay(name, vol, loop) {
+  const a = sfxAudio(name, vol, loop);
+  a.currentTime = 0;
+  a.play().catch(e => console.warn('[sfx]', name, e.message));
+  return a;
+}
+function sfxStop(name) { const a = sfx[name]; if (a) { a.pause(); a.currentTime = 0; } }
+// Loudness match (SFX_MATCH_ALIEN): decoded buffers played through a gain node, since an <audio> volume can't exceed 1
+let sfxMatch = null; // { gavel: { buf, gain }, noise: { buf, gain } } once measured
+const sfxCtx = () => audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
+const sfxLoad = name => fetch('sounds/' + name).then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('HTTP ' + r.status)))
+  .then(b => sfxCtx().decodeAudioData(b));
+function sfxLevel(buf, ms) { // { rms, peak } over the first ms (whole buffer without ms), all channels
+  const n = ms ? Math.min(buf.length, Math.round(buf.sampleRate * ms / 1000)) : buf.length;
+  let sum = 0, peak = 0;
+  for (let c = 0; c < buf.numberOfChannels; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < n; i++) { sum += d[i] * d[i]; peak = Math.max(peak, Math.abs(d[i])); }
+  }
+  return { rms: Math.sqrt(sum / (n * buf.numberOfChannels)), peak };
+}
+function playBuf({ buf, gain }, loop = false, ms) {
+  const ctx = sfxCtx();
+  ctx.resume();
+  const src = ctx.createBufferSource(), vol = ctx.createGain();
+  src.buffer = buf;
+  src.loop = loop;
+  vol.gain.value = gain;
+  src.connect(vol).connect(ctx.destination);
+  src.start(0, 0, ms ? ms / 1000 : undefined);
+  return { src, vol };
+}
+let gavelClipTimer = 0;
+function gavelClip() {
+  if (sfxMatch) return void playBuf(sfxMatch.gavel, false, GAVEL_CLIP_MS);
+  const a = sfxPlay('gavel.mp3', SFX_VOLUME.gavel);
+  clearTimeout(gavelClipTimer);
+  gavelClipTimer = setTimeout(() => a.pause(), GAVEL_CLIP_MS);
+}
+const NOISE = 'people-talking-in-cinema-before-movie-starts-65662.mp3';
+let noiseFade = 0, noiseNode = null, noiseStopTimer = 0;
+function noiseStart() {
+  clearInterval(noiseFade);
+  if (sfxMatch) {
+    clearTimeout(noiseStopTimer);
+    noiseNode ??= playBuf(sfxMatch.noise, true);
+    const g = noiseNode.vol.gain;
+    g.cancelScheduledValues(0);
+    g.value = sfxMatch.noise.gain;
+    return;
+  }
+  const a = sfxAudio(NOISE, SFX_VOLUME.noise, true);
+  if (!a.paused) return;
+  a.play().catch(() => { // autoplay is blocked until the first click/key
+    const retry = () => { if (cur < 2 && a.paused && !sfxMatch) a.play().catch(() => {}); };
+    addEventListener('pointerdown', retry, { once: true });
+    addEventListener('keydown', retry, { once: true });
+  });
+}
+function noiseFadeOut() {
+  if (noiseNode) {
+    const n = noiseNode, g = n.vol.gain, t = audioCtx.currentTime;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(0, t + NOISE_FADE_MS / 1000);
+    clearTimeout(noiseStopTimer);
+    noiseStopTimer = setTimeout(() => { n.src.stop(); if (noiseNode === n) noiseNode = null; }, NOISE_FADE_MS);
+    return;
+  }
+  const a = sfx[NOISE];
+  if (!a || a.paused) return;
+  clearInterval(noiseFade);
+  const step = a.volume / (NOISE_FADE_MS / 50);
+  noiseFade = setInterval(() => {
+    a.volume = Math.max(0, a.volume - step);
+    if (a.volume === 0) { clearInterval(noiseFade); a.pause(); }
+  }, 50);
+}
+if (SOUND_FX_ENABLED && SFX_MATCH_ALIEN) {
+  Promise.all(['alien.mp3', 'gavel.mp3', NOISE].map(sfxLoad)).then(([alien, gavel, noise]) => {
+    const target = sfxLevel(alien).rms * SFX_VOLUME.alien;
+    const fit = (buf, ms) => { const { rms, peak } = sfxLevel(buf, ms); return { buf, gain: Math.min(SFX_MAX_GAIN, target / rms, 1 / peak) }; };
+    sfxMatch = { gavel: fit(gavel, GAVEL_CLIP_MS), noise: fit(noise) };
+    console.info('[sfx] matched gains: gavel', sfxMatch.gavel.gain.toFixed(2), 'noise', sfxMatch.noise.gain.toFixed(2));
+    if (cur < 2) { sfx[NOISE]?.pause(); noiseStart(); } // swap the <audio> noise for the matched one
+  }).catch(e => console.warn('[sfx] loudness match off, SFX_VOLUME used:', e.message));
+  ['pointerdown', 'keydown'].forEach(t => addEventListener(t, () => audioCtx?.resume(), { once: true })); // autoplay unlock
+}
 async function gavelStrikes(times, g, onHit) {
   const block = gavelEl.firstChild;
   closeJudge.classList.add('striking'); // v9 hideHands: the gavel hand shows only during the strikes
@@ -3017,7 +3198,7 @@ async function gavelStrikes(times, g, onHit) {
     await wait(GAVEL.strikeMs);
     if (g !== gen) return;
     if (GAVEL_ENABLED) {
-      gavelSound();
+      SOUND_FX_ENABLED ? gavelClip() : gavelSound();
       stage.classList.remove('gavel', 'gavel-hit');
       stage.offsetWidth; // restart the animation
       stage.classList.add('gavel-hit');
@@ -3682,6 +3863,10 @@ async function playTrailer(g) {
     trPop(trBubble);
     if (cut.shake) trShake(cut.shake);
     TR_SOUNDS[cut.sound]?.();
+    if (SOUND_FX_ENABLED) {
+      if (i === 0) sfxPlay('alien.mp3', SFX_VOLUME.alien, true);
+      if (i + 1 === TRAILER_SFX_SWITCH_LINE) { sfxStop('alien.mp3'); sfxPlay('angry-cat.mp3', SFX_VOLUME.cat); }
+    }
     await wait(T[key]);
     setTalking(el, false);
   }
@@ -3924,12 +4109,13 @@ const STAGES = [
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     const lines = JUDGMENT_TEXTS[VERDICT.result].split(/(?<=[.!?])\s+/);
     lines.push(JUDGMENT_RIDERS[VERDICT.result]);
+    if (TTS_API_ENABLED) lines.forEach(l => ttsFetch(l).catch(() => {})); // prefetch so lines play back to back
     dbg('reading start,', lines.length, 'utterances');
     for (const [i, line] of lines.entries()) {
       if (g !== gen) return;
       caption(line, i === lines.length - 1 ? { rider: true } : { id: 'judge' });
       setTalking(closeJudge, true);
-      const why = await speak(line);
+      const why = await speakVerdict(line);
       setTalking(closeJudge, false);
       lineDone();
       dbg('utterance', i + 1, 'done:', why);
@@ -3994,6 +4180,7 @@ let cur = 0; // stage being played (or last played)
 async function runStage(i) {
   const g = gen, s = STAGES[i];
   cur = i;
+  if (SOUND_FX_ENABLED) i < 2 ? noiseStart() : noiseFadeOut(); // crowd noise on role select + entry only
   prevBtn.disabled = i === 0;
   nextBtn.disabled = true;
   caption(s.name, { id: s.speaker });
@@ -4014,6 +4201,9 @@ function stopPlayback() {
   gen++;
   pickRole = lineSkip = null;
   if ('speechSynthesis' in window) speechSynthesis.cancel();
+  speakVerdict.current?.pause(); // its pending promise is dropped: the stage bails on the gen check
+  sfxStop('alien.mp3');
+  sfxStop('angry-cat.mp3');
   [...timers.keys()].forEach(k => loop(k, false));
   stage.classList.remove('gavel', 'gavel-hit');
 }
@@ -4089,6 +4279,45 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') nextBtn.click();
 });
 goTo(0);
+
+// ===== TEMP TEST PANEL (TEST_PANEL_ENABLED): remove this whole block when done =====
+if (TEST_PANEL_ENABLED) {
+  const panel = document.createElement('div');
+  panel.style.cssText = 'position:fixed;top:8px;right:8px;z-index:99999;width:360px;max-width:calc(100vw - 16px);' +
+    'background:#ff0;color:#000;border:4px dashed #f00;padding:8px;font:12px/1.4 monospace;box-sizing:border-box';
+  panel.innerHTML = '<div style="font-weight:bold;color:#f00">TEMP TEST PANEL</div>' +
+    '<button type="button" style="margin:4px 0;padding:4px 8px;font:inherit;cursor:pointer">사건 생성 테스트</button>' +
+    '<pre style="margin:0;max-height:50vh;overflow:auto;white-space:pre-wrap;background:#fff;padding:4px"></pre>';
+  const btn = panel.querySelector('button');
+  const out = panel.querySelector('pre');
+  // keep clicks/keys from reaching the stage handlers
+  ['click', 'keydown'].forEach(t => panel.addEventListener(t, e => e.stopPropagation()));
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    out.textContent = '...';
+    try {
+      const res = await fetch(TEST_PANEL_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'generate_case', payload: null })
+      });
+      const text = await res.text();
+      let body = text;
+      try { body = JSON.stringify(JSON.parse(text), null, 2); } catch (_) {}
+      out.textContent = (res.ok ? '' : 'HTTP ' + res.status + '\n') + body;
+      if (res.ok && CASE_GENERATION_ENABLED) {
+        let applied = false;
+        try { applied = applyGeneratedCase(JSON.parse(text).result); } catch (_) {}
+        out.textContent += applied ? '\n\n[applied to the game]' : '\n\n[not applied: fixed case kept]';
+      }
+    } catch (err) {
+      out.textContent = 'Error: ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  document.body.appendChild(panel);
+}
 </script>
 </body>
 </html>

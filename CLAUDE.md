@@ -2,6 +2,14 @@
 
 Demo of the "Love Trial" feature (side content for a dating app), seen from one juror ("me", ME). Everyone else is scripted.
 
+## Versions
+Three copies of the page share the root assets (images/, fonts/, sounds/; paths are ../images etc.):
+- `demo/`: video recording. Fixed case only, no server (CASE_GENERATION_ENABLED, TTS_API_ENABLED, TEST_PANEL_ENABLED false).
+- `single-api/` (+ `server/`): the current API version (case generation, OpenAI TTS).
+- `multiplayer/` (+ `server/`): future multi-user play; for now a copy of single-api.
+- Root `index.html` and `server/` are the pre-split originals, kept until the user decides to delete them.
+- Each `server/` needs its own `.env` (not copied); both servers default to port 8787, so run one at a time.
+
 ## Language
 - English for code, comments, file names and docs. Only on-screen text is Korean, and it lives in SCENARIO CONFIG.
 - Internal keys stay English (judge, prosecutor, defender, juror, innocent, protest).
