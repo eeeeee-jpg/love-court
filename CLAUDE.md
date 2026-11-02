@@ -19,7 +19,7 @@ Demo of the "Love Trial" feature (side content for a dating app), seen from one 
 - Every visual change goes behind a version switch (`*_V<n>`, false = the previous state); values go in DESIGN CONFIG.
 
 ## Direction
-- Demo first; a playable multi-user game follows. Scripted parts (NPC lines, NPC votes, auto entry) should sit behind demo-mode flags so real input can replace them. Today only the role card has demo settings (DEMO_PICK_ROLE, DEMO_ALLOWED_ROLES); NPC lines/votes/entry have no flag yet.
+- Presentation demo only; a multi-user game is not planned for now. Demo settings exist only for the role card (DEMO_PICK_ROLE, DEMO_ALLOWED_ROLES).
 - All content is scripted (fixed case, JUDGMENT_TEXTS). No AI calls; the case-generation and test-panel code was removed with the server.
 
 ## Decisions
@@ -51,10 +51,9 @@ Demo of the "Love Trial" feature (side content for a dating app), seen from one 
 - reference/ (if recreated) is never used or committed.
 
 ## Branches
-- `scenario`: SCENARIO CONFIG and flow only. `design`: DESIGN CONFIG and visuals only. Both merge into `main`.
-- `server`: sound and voice work, then the cleanup to one file; main is fast-forwarded to it.
-- Check the current branch before starting; commit before a large change.
+- `main` only (scenario, design and server were merged and deleted). Commit before a large change.
 
 ## Open items
-- Browser check not done yet: sound timing and levels, gavel onset, voice timing, juror label overlap, vote mark.
+- Advocates' regular lines have no recordings yet (only their cut-in shouts are voiced).
+- Before recording the video: DEBUG_LOG false, open over http://.
 - Missing assets (speaker-shot backgrounds); speaker shots.
