@@ -951,6 +951,9 @@ const CLOSEUP_DESK_CLIP = { x: 14, y: 55, w: 71, h: 35 };
 // Illustrated portraits (cut-in band; judge close-up only if JUDGE_USE_PORTRAIT). A missing file falls back to the pixel sprite
 const JUDGE_USE_PORTRAIT = false;  // false = pixel judge in the close-up (CLOSEUP_JUDGE); true = judge-neutral.png (preloaded only then)
 const PORTRAIT_FILES = { judge: '../images/judge-neutral.png', prosecutor: '../images/prosecutor-point.png', defender: '../images/defender-point.png' };
+// V34: cut-in portrait per speech (SPEECH_PLAN key); other cut-ins keep PORTRAIT_FILES. The hand copy is tuned to the pointing art, so it is off for these
+const CUTIN_PORTRAIT_V34 = true;
+const CUTIN_PORTRAIT_FILES_V34 = { 'issue1.prosecutor': '../images/prosecutor.png', 'issue1.defender': '../images/defender.png' };
 const PORTRAIT_AUTO_TRIM = true;   // place by the opaque bounding box (canvas read; blocked on file:// → whole image)
 const PORTRAIT_BLEND = 'auto';     // 'auto' = multiply + console warning if the image has no transparency | 'normal' | 'multiply'
 const PORTRAIT_FLIP = { prosecutor: false, defender: false }; // originals already point at the bubble side
@@ -1283,11 +1286,15 @@ const SFX_VOLUME = { noise: 0.15, gavel: 1, alien: 0.5, cat: 0.8, keyboard: 0.35
 const ALIEN_BLIP_MS = 250;          // stages 5~7: alien.mp3 played this long (from its onset) when a plain advocate line starts
 // Recorded cut-in shouts (portrait close-up bubble), keyed like CUTIN_SHOUTS; played after the cut-in sweep (cutinSound, 250 ms)
 const CUTIN_VOICE_FILES = {
-  'issue1.prosecutor': 'prosecutor_01_final.mp3', 'issue2.prosecutor': 'prosecutor_02_final.mp3',
-  'issue1.defender':   'defender_01_final.mp3',   'issue2.defender':   'defender_02_final.mp3',
+  'issue1.prosecutor': 'prosecutor_01.mp3', 'issue2.prosecutor': 'prosecutor_02.mp3',
+  'issue1.defender':   'defender_01.mp3',   'issue2.defender':   'defender_02.mp3',
 };
 const CUTIN_VOICE_DELAY_MS = 250;
 const CUTIN_VOICE_VOLUME = 1;
+// Judge line recordings by stage (3 opening, 4 case intro, 7 instructions, 11 verdict, 12 adjournment); the stage waits for the end
+const JUDGE_VOICE_FILES = { 3: 'judge_01_gaejeong.mp3', 4: 'judge_02_sageon_sogae.mp3', 7: 'judge_03_toron_annae.mp3',
+                            11: 'judge_04_pankyulmun.mp3', 12: 'judge_05_pyejeong.mp3' };
+const JUDGE_VOICE_VOLUME = 1;
 const GAVEL_CLIP_MS = 400;          // gavel.mp3 holds 2 strikes: play this much from the first strike's onset
 const GAVEL_ONSET_THRESHOLD = 0.2;  // onset = first sample above this share of the file's peak (found after decoding)
 const GAVEL_PREROLL_MS = 10;        // start this much before the onset so the attack isn't cut
@@ -2901,6 +2908,12 @@ Object.entries(PORTRAIT_FILES).forEach(([id, src]) => {
   img.onerror = () => console.warn('[court] portrait missing, pixel sprite instead:', src);
   img.src = src;
 });
+if (CUTIN_PORTRAIT_V34) Object.entries(CUTIN_PORTRAIT_FILES_V34).forEach(([key, src]) => {
+  const img = new Image();
+  img.onload = () => PORTRAITS[key] = measurePortrait(img);
+  img.onerror = () => console.warn('[court] cut-in portrait missing, default instead:', src);
+  img.src = src;
+});
 // Judge speaking cut: the front close-up (pixel judge, or the portrait if JUDGE_USE_PORTRAIT)
 const judgeCut = on => closeup.classList.toggle('show', on);
 // Top-view background: keep the fallback floor if the image is missing
@@ -3128,6 +3141,28 @@ function cutinVoice(id, text, g) {
     a.play().catch(e => { console.warn('[sfx] cut-in voice', file, e.message); done(); });
   }));
 }
+// Judge recording for a stage (JUDGE_VOICE_FILES); resolves when it ends, fails or is stopped. No file: resolves at once
+function judgeVoice(stage, g) {
+  const file = SOUND_FX_ENABLED && JUDGE_VOICE_FILES[stage];
+  judgeVoice.current = null;
+  if (!file || g !== gen) return Promise.resolve();
+  const a = judgeVoice.current = new Audio('../sounds/' + file);
+  a.volume = JUDGE_VOICE_VOLUME;
+  return new Promise(done => {
+    a.onended = a.onerror = a.onpause = done; // onpause: stopPlayback
+    a.play().catch(e => { console.warn('[sfx] judge voice', file, e.message); done(); });
+  });
+}
+// Length of the current judge recording in ms; 0 if there is none or it fails to load
+function judgeVoiceMs() {
+  const a = judgeVoice.current;
+  return new Promise(r => {
+    if (!a) return r(0);
+    if (a.readyState >= 1) return r(a.duration * 1000);
+    a.addEventListener('loadedmetadata', () => r(a.duration * 1000), { once: true });
+    a.addEventListener('error', () => r(0), { once: true });
+  });
+}
 let alienOnsetMs = 0, blipTimer = 0;
 function alienBlip() {
   const a = alienBlip.el ??= new Audio('../sounds/alien.mp3');
@@ -3248,8 +3283,9 @@ function typeMsg(span, onDone) {
 async function say(id, text, ms, g, cutin) {
   await stepForth(id, g);
   if (g !== gen) return;
-  const shout = SOUND_FX_ENABLED && cutin ? cutinVoice(id, text, g) : null; // starts with the cut-in, after its sweep sound
-  if (cutin) await cutinIntro(id, cutin, g); // stays on screen through the line
+  const shout = SOUND_FX_ENABLED && cutin ? cutinVoice(id, text, g) // starts with the cut-in, after its sweep sound
+    : id === 'judge' ? judgeVoice(cur, g) : null; // judge's recorded line (stage 7)
+  if (cutin) await cutinIntro(id, cutin, g, text); // stays on screen through the line
   if (g !== gen) return;
   if (id === 'judge') judgeCut(true);
   if (SOUND_FX_ENABLED && !cutin && (id === 'prosecutor' || id === 'defender') && cur >= 5 && cur <= 7) alienBlip();
@@ -3498,9 +3534,10 @@ function cutinSound() {
   } catch {} // no Web Audio: silent cut-in
 }
 // Entrance (CUTIN_INTRO_MS); the cut-in then stays until cutinOut
-async function cutinIntro(id, text, g) {
+async function cutinIntro(id, text, g, line) {
   const C = CUTIN, left = id === 'prosecutor'; // prosecutor's sprite on the left, defender's on the right
-  const [dim, flash, band, pt, burst, handPt] = cutinEl.children, p = PORTRAITS[id];
+  const alt = CUTIN_PORTRAIT_V34 ? PORTRAITS[SPEECH_PLAN.find(x => x.side === id && x.text === line)?.id] : null;
+  const [dim, flash, band, pt, burst, handPt] = cutinEl.children, p = alt ?? PORTRAITS[id];
   const who = p ? [pt, handPt] : [band.firstChild]; // portrait (+ hand copy), or the pixel sprite if the file is missing
   cutinEl.className = left ? 'left' : 'right';
   cutinEl.hidden = false;
@@ -3508,7 +3545,7 @@ async function cutinIntro(id, text, g) {
   band.style.setProperty('--stripe', CUTIN_BAND[id].stripe);
   band.firstChild.hidden = !!p;
   cutPortrait.hidden = !p;
-  cutHand.hidden = !p || !CUTIN_HAND_OVER_BUBBLE;
+  cutHand.hidden = !p || !CUTIN_HAND_OVER_BUBBLE || !!alt;
   if (p) {
     const top = 50 - C.bandHeight / 2 - CUTIN_PORTRAIT_POPOUT * C.bandHeight, h = CUTIN_PORTRAIT_H * C.bandHeight;
     // Keep the whole opaque box (head, shoulders) on screen: pull the center back in if the offset pushes it out
@@ -4039,7 +4076,7 @@ const STAGES = [
     setTalking(els.judge, true);
     const line = '지금부터 개정합니다';
     speech('judge', line);
-    const t = typing.done.then(() => wait(LINE_HOLD_AFTER_TYPING_MS));
+    const t = Promise.all([typing.done.then(() => wait(LINE_HOLD_AFTER_TYPING_MS)), judgeVoice(3, g)]);
     await wait(600);
     if (g === gen) sit(OTHERS, true);
     await t;
@@ -4054,7 +4091,7 @@ const STAGES = [
     fitCasePanel();
     judgeCut(true);
     setTalking(els.judge, true);
-    await wait(2500);
+    await Promise.all([wait(2500), judgeVoice(4, g)]);
     if (g !== gen) return;
     setTalking(els.judge, false);
     lineDone();
@@ -4125,15 +4162,22 @@ const STAGES = [
     const lines = JUDGMENT_TEXTS[VERDICT.result].split(/(?<=[.!?])\s+/);
     lines.push(JUDGMENT_RIDERS[VERDICT.result]);
     dbg('reading start,', lines.length, 'lines');
+    // With the recording: each line ends at its share (by length) of the audio, so the text keeps pace with the voice
+    const voice = judgeVoice(11, g), voiceMs = await judgeVoiceMs(), t0 = performance.now();
+    const chars = lines.reduce((n, l) => n + l.length, 0);
+    let done = 0;
     for (const [i, line] of lines.entries()) {
       if (g !== gen) return;
       caption(line, i === lines.length - 1 ? { rider: true } : { id: 'judge' });
       setTalking(closeJudge, true);
-      await typing.done.then(() => wait(LINE_HOLD_AFTER_TYPING_MS));
+      done += line.length;
+      await (voiceMs ? Promise.all([typing.done, wait(t0 + voiceMs * done / chars - performance.now())])
+                     : typing.done.then(() => wait(LINE_HOLD_AFTER_TYPING_MS)));
       setTalking(closeJudge, false);
       lineDone();
       dbg('line', i + 1, 'done');
     }
+    await voice;
     if (g !== gen) return;
     dbg('gavel start');
     let stamp = null;
@@ -4154,7 +4198,7 @@ const STAGES = [
     caption(CLOSING_LINE, { id: 'judge' });
     judgeCut(true);
     gavel(1, g);
-    await talk(els.judge, 2500, g);
+    await Promise.all([talk(els.judge, 2500, g), judgeVoice(12, g)]);
     if (g !== gen) return;
     lineDone();
     judgeCut(false);
@@ -4218,6 +4262,7 @@ function stopPlayback() {
   sfxStop('angry-cat.mp3');
   sfxStop('keyboard.mp3'); // typeMsg's finish doesn't run when its timer is cleared below
   cutinVoice.current?.pause();
+  judgeVoice.current?.pause();
   [...timers.keys()].forEach(k => loop(k, false));
   stage.classList.remove('gavel', 'gavel-hit');
 }
