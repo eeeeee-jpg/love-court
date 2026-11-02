@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>법정 시연</title>
+<title>연애 재판</title>
+<link rel="icon" href="data:,"><!-- no favicon file: stops the /favicon.ico 404 -->
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; height: 100vh; background: #111; color: #eee; font-family: sans-serif;
@@ -826,7 +827,7 @@ const JUDGMENT_RIDERS = {
 };
 const CLOSING_LINE = '이상으로 재판을 마칩니다. 폐정합니다.';
 // Outro card (stage 13)
-const OUTRO = { label: '다음 사건', title: '커피 한 잔 더치페이 사건', note: '곧 개정' };
+const OUTRO = { label: '다음 사건', title: '핫팩 사건', note: '곧 개정' };
 // Stage 13 reenactment trailer (TRAILER_ENABLED); OUTRO is the card used when it is off
 const TRAILER_TEXT = {
   reenact: '※ 재연입니다',
@@ -950,8 +951,8 @@ const CLOSEUP_ARMS = { y: 18, handX: [3, 7] };
 // Close-up desk area in the image (%): redrawn above the judge so the desk hides the lower body
 const CLOSEUP_DESK_CLIP = { x: 14, y: 55, w: 71, h: 35 };
 // Illustrated portraits (cut-in band; judge close-up only if JUDGE_USE_PORTRAIT). A missing file falls back to the pixel sprite
-const JUDGE_USE_PORTRAIT = false;  // false = pixel judge in the close-up (CLOSEUP_JUDGE); true = judge-neutral.png (preloaded only then)
-const PORTRAIT_FILES = { judge: 'images/judge-neutral.png', prosecutor: 'images/prosecutor-point.png', defender: 'images/defender-point.png' };
+const JUDGE_USE_PORTRAIT = false;  // false = pixel judge in the close-up (CLOSEUP_JUDGE); true = PORTRAIT_FILES.judge (none now: the pixel judge stays)
+const PORTRAIT_FILES = { prosecutor: 'images/prosecutor-point.png', defender: 'images/defender-point.png' };
 // V34: cut-in portrait per speech (SPEECH_PLAN key); other cut-ins keep PORTRAIT_FILES. The hand copy is tuned to the pointing art, so it is off for these
 const CUTIN_PORTRAIT_V34 = true;
 const CUTIN_PORTRAIT_FILES_V34 = { 'issue1.prosecutor': 'images/prosecutor.png', 'issue1.defender': 'images/defender.png' };
@@ -1317,7 +1318,7 @@ const SFX_MAX_GAIN = 8; // the gain is also capped so the peak stays under 1 (no
 // length = gavel length, block = sound block width (cqw); raiseDeg = lift angle around the grip end; times in ms
 const GAVEL = { x: 41, y: 55.5, length: 8, block: 3, raiseDeg: 50, raiseMs: 250, strikeMs: 100, gapMs: 700, shakeMs: 250, pauseMs: 1000 };
 const SAFETY_UNLOCK_MS = 60000; // a stage that hasn't finished by then (except ones waiting for input) enables ▶ anyway
-const DEBUG_LOG = true;         // console logs for stages and the verdict sequence
+const DEBUG_LOG = false;        // console logs for stages and the verdict sequence
 // Verdict reaction (stage 12 start): the winner jumps under fireworks and floats away with balloons,
 // the loser kneels in front of the desk and pounds the floor. Times in ms, sizes in cqw unless noted
 const WINNER = { notGuilty: 'defender', protestJustified: 'prosecutor' };
@@ -1741,7 +1742,7 @@ const pixelFontsReady = (() => {
   }));
   const timeout = new Promise(r => setTimeout(r, PIXEL_FONT_LOAD_TIMEOUT_MS));
   return Promise.race([Promise.all(faces), timeout]).then(() => {
-    console.log('[court] pixel fonts loaded:', pixelFontReport.applied, 'failed:', pixelFontReport.failed);
+    dbg('pixel fonts loaded:', pixelFontReport.applied, 'failed:', pixelFontReport.failed);
     if (!pixelFontReport.applied.length) console.warn('[court] pixel fonts: none loaded (missing files or blocked, e.g. file://) - previous fonts kept');
     return pixelFontReport.applied.length > 0;
   });
@@ -1972,7 +1973,7 @@ function measureChat() {
                 tabToFirstMsg: first ? first.top - tab.bottom : null, msgsToInput: bar.top - m.bottom };
   return Object.fromEntries(Object.entries(row).map(([k, v]) => [k, v == null ? v : +v.toFixed(2)]));
 }
-if (CHAT_PADDING_V22) new MutationObserver(() => !chat.hidden && requestAnimationFrame(() => console.table([measureChat()])))
+if (CHAT_PADDING_V22) new MutationObserver(() => DEBUG_LOG && !chat.hidden && requestAnimationFrame(() => console.table([measureChat()])))
   .observe(chat, { attributes: true, attributeFilter: ['hidden'] });
 [['--chat-title', CHAT_PANEL.titleCqw], ['--chat-gap', CHAT_MESSAGE_GAP_CQW + 'cqw'], ['--chat-name', CHAT_PANEL.nameCqw], ['--chat-body', CHAT_PANEL.bodyCqw],
  ['--chat-input', CHAT_PANEL.inputCqw], ['--chat-lh', CHAT_PANEL.lineHeight]].forEach(([k, v]) => chat.style.setProperty(k, v));
@@ -2775,7 +2776,7 @@ function fitPlatePadding() {
     const h = (pair[1]._PH + (pv - avg) / slope) / perCqw + 'cqw';
     el.style.height = ref.style.height = h;
   });
-  console.table(measurePlates().map(({ _g, _H, _PW, _PH, ...row }) => row));
+  if (DEBUG_LOG) console.table(measurePlates().map(({ _g, _H, _PW, _PH, ...row }) => row));
 }
 if (NAMEPLATE_SIZE_V15) {
   document.fonts.ready.then(fitPlatePadding);
@@ -3207,15 +3208,15 @@ if (SOUND_FX_ENABLED && SFX_MATCH_ALIEN) {
     const fit = (buf, ms, fromMs) => { const { rms, peak } = sfxLevel(buf, ms, fromMs); return { buf, gain: Math.min(SFX_MAX_GAIN, target / rms, 1 / peak) }; };
     gavelOnsetMs = sfxOnsetMs(gavel, GAVEL_ONSET_THRESHOLD);
     alienOnsetMs = sfxOnsetMs(alien, GAVEL_ONSET_THRESHOLD); // same rule: the blip starts where the alien sound does
-    console.info('[sfx] gavel onset', Math.round(gavelOnsetMs), 'ms, alien onset', Math.round(alienOnsetMs), 'ms');
+    if (DEBUG_LOG) console.info('[sfx] gavel onset', Math.round(gavelOnsetMs), 'ms, alien onset', Math.round(alienOnsetMs), 'ms');
     sfxMatch = { gavel: fit(gavel, GAVEL_CLIP_MS, gavelOnsetMs), noise: fit(noise) };
-    console.info('[sfx] matched gains: gavel', sfxMatch.gavel.gain.toFixed(2), 'noise', sfxMatch.noise.gain.toFixed(2));
+    if (DEBUG_LOG) console.info('[sfx] matched gains: gavel', sfxMatch.gavel.gain.toFixed(2), 'noise', sfxMatch.noise.gain.toFixed(2));
     if (cur < 2) { sfx[NOISE]?.pause(); noiseStart(); } // swap the <audio> noise for the matched one
   }).catch(e => console.warn('[sfx] loudness match off, SFX_VOLUME used:', e.message));
   ['pointerdown', 'keydown'].forEach(t => addEventListener(t, () => audioCtx?.resume(), { once: true })); // autoplay unlock
 } else if (SOUND_FX_ENABLED) sfxLoad('gavel.mp3').then(b => {
   gavelOnsetMs = sfxOnsetMs(b, GAVEL_ONSET_THRESHOLD);
-  console.info('[sfx] gavel onset', Math.round(gavelOnsetMs), 'ms');
+  if (DEBUG_LOG) console.info('[sfx] gavel onset', Math.round(gavelOnsetMs), 'ms');
 }).catch(e => console.warn('[sfx] gavel onset not found, GAVEL_ONSET_MS_FALLBACK used:', e.message));
 async function gavelStrikes(times, g, onHit) {
   const block = gavelEl.firstChild;
@@ -3342,8 +3343,7 @@ function speechTable(tag) {
   speechBlocks().forEach(([stage, lines]) => lines.filter(l => l.id === 'prosecutor' || l.id === 'defender')
     .forEach(l => rows.push({ n: rows.length + 1, stage, speaker: l.id, line: l.text.slice(0, 15), cutin: plan.get(l.text) ? '○' : '×' })));
   const runs = rows.filter((r, i) => i && r.speaker === rows[i - 1].speaker).length;
-  console.log(`[court] speaking order (${tag}) — same-speaker runs: ${runs}`);
-  console.table(rows);
+  if (DEBUG_LOG) { console.log(`[court] speaking order (${tag}) — same-speaker runs: ${runs}`); console.table(rows); }
   return runs;
 }
 // Cut-in picks by text (per side numbering doesn't depend on the cross-side order)
@@ -3388,7 +3388,7 @@ const SPEECH_PLAN = [];
   SPEECH_PLAN.push({ side: id, n, stage, id: key, text, shout: picked ? CUTIN_SHOUTS[key] ?? null : null });
 }));
 const CUTIN_BY_TEXT = new Map(SPEECH_PLAN.map(x => [x.text, x.shout]));
-if (CUTIN_PLACEMENT_V20) console.table(SPEECH_PLAN.map(x => ({ side: x.side, n: x.n, stage: x.stage, id: x.id, line: x.text.slice(0, 15),
+if (CUTIN_PLACEMENT_V20 && DEBUG_LOG) console.table(SPEECH_PLAN.map(x => ({ side: x.side, n: x.n, stage: x.stage, id: x.id, line: x.text.slice(0, 15),
   cutin: x.shout ? '○' : '×', shout: x.shout ?? '' })));
 async function sayAll(lines, g) {
   for (const [i, { id, text, cutin }] of lines.entries()) {
@@ -4059,7 +4059,7 @@ const STAGES = [
     await walk(els.judge, AVATARS[0], g);
     if (g === gen) await faceSeat('judge', g);
   } },
-  { name: '', run: async g => { // TTS + bubble icon + mouth, no subtitle/chat
+  { name: '', run: async g => { // judge recording + bubble icon + mouth, no subtitle/chat
     sit(['judge'], true);
     judgeCut(true);
     els.judge.classList.add('talking');

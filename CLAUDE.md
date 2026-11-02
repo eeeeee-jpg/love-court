@@ -3,7 +3,7 @@
 Demo of the "Love Trial" feature (side content for a dating app), seen from one juror ("me", ME). Everyone else is scripted.
 
 ## Scope
-- One file: root `index.html`, the scripted demo for presentation (assets in images/, fonts/, sounds/). No server and no real-time multi-user play are planned for now.
+- One file: root `index.html`, the scripted demo for presentation (assets in images/, fonts/, sounds/). No server or real-time multi-user play in this version.
 - The demo/, single-api/, multiplayer/ and server/ folders were removed (history in git, last at commit 3b39952).
 
 ## Language
@@ -19,7 +19,7 @@ Demo of the "Love Trial" feature (side content for a dating app), seen from one 
 - Every visual change goes behind a version switch (`*_V<n>`, false = the previous state); values go in DESIGN CONFIG.
 
 ## Direction
-- Presentation demo only; a multi-user game is not planned for now. Demo settings exist only for the role card (DEMO_PICK_ROLE, DEMO_ALLOWED_ROLES).
+- Today: presentation demo only. Planned next (as in README): AI case/verdict generation for single play (OpenAI API via a server) and real-time multi-user play. Demo settings exist only for the role card (DEMO_PICK_ROLE, DEMO_ALLOWED_ROLES).
 - All content is scripted (fixed case, JUDGMENT_TEXTS). No AI calls; the case-generation and test-panel code was removed with the server.
 
 ## Decisions
@@ -46,7 +46,7 @@ Demo of the "Love Trial" feature (side content for a dating app), seen from one 
 - Speaker shots (virtual camera): not built.
 
 ## Assets
-- images/ in use: bg-top.png, bg-front.png, logo.png, prosecutor-point.png, defender-point.png, prosecutor.png, defender.png. judge-neutral.png was removed (JUDGE_USE_PORTRAIT = true now falls back to the pixel judge). Not made: bg-prosecutor, bg-defender.
+- images/ in use: bg-top.png, bg-front.png, logo.png, prosecutor-point.png, defender-point.png, prosecutor.png, defender.png. judge-neutral.png and its PORTRAIT_FILES entry were removed (JUDGE_USE_PORTRAIT = true keeps the pixel judge). Not made: bg-prosecutor, bg-defender.
 - sounds/: user-supplied effects and voice recordings; all are in use.
 - reference/ (if recreated) is never used or committed.
 
@@ -55,5 +55,5 @@ Demo of the "Love Trial" feature (side content for a dating app), seen from one 
 
 ## Open items
 - Advocates' regular lines have no recordings yet (only their cut-in shouts are voiced).
-- Before recording the video: DEBUG_LOG false, open over http://.
+- Deployed on Netlify (https://lovecourt.netlify.app/, GitHub integration). Open over http(s), not file://.
 - Missing assets (speaker-shot backgrounds); speaker shots.
