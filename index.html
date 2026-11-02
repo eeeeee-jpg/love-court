@@ -709,6 +709,17 @@
   .tr-card .ask { font-size: 1.6cqw; color: var(--gold-light); opacity: .85; }
   .tr-card button { margin-top: .6cqw; padding: .5cqw 2.4cqw; font: bold 1.6cqw var(--font-body); color: #111; cursor: pointer;
                     background: var(--gold-base); border: .2cqw solid var(--gold-light); border-radius: .4cqw; }
+  /* CTA (CTA_BUTTON_ENABLED): outlined twin of the restart button, plus a small toast */
+  .tr-card button.tr-cta { margin-top: 0; color: var(--gold-light); background: rgba(212,175,55,.12); }
+  .tr-card button.tr-cta:hover { background: rgba(212,175,55,.25); }
+  /* After a click (until reload): the notice stays on the button, with a CSS check mark */
+  .tr-card button.tr-cta.done { color: #111; background: var(--gold-light); cursor: default; }
+  .tr-card button.tr-cta.done::before { content: ''; display: inline-block; width: .45em; height: .85em; margin-right: .6em; translate: 0 -.15em;
+                                        rotate: 45deg; border: solid currentColor; border-width: 0 .2em .2em 0; }
+  .tr-toast { position: absolute; left: 50%; bottom: 14%; translate: -50% 0; padding: .6cqw 1.8cqw; font: bold 1.4cqw var(--font-body);
+              color: var(--gold-light); background: rgba(0,0,0,.85); border: .15cqw solid var(--gold-base); border-radius: .4cqw;
+              opacity: 0; transition: opacity .25s; pointer-events: none; }
+  .tr-toast.show { opacity: 1; }
   /* Stage 13 popup: framed trailer thumbnail over the dimmed, blurred courtroom; clicked to play */
   #trailerPopup { position: absolute; inset: 0; z-index: 229; /* under #trailer, which fades in over the dark zoom */
                   display: flex; align-items: center; justify-content: center;
@@ -790,7 +801,7 @@
     <div class="tr-tag"></div>
     <div class="tr-cap"></div>
     <div class="tr-flash"></div>
-    <div class="tr-card" hidden><div class="tr-band"><b></b></div><img alt=""><p class="note"></p><p class="ask"></p><button hidden></button></div>
+    <div class="tr-card" hidden><div class="tr-band"><b></b></div><img alt=""><p class="note"></p><p class="ask"></p><button hidden></button><button class="tr-cta" hidden></button><p class="tr-toast"></p></div>
     <button class="tr-replay" hidden><i></i><span></span></button>
   </div>
   <div id="trailerPopup" hidden>
@@ -828,6 +839,7 @@ const JUDGMENT_RIDERS = {
 const CLOSING_LINE = '이상으로 재판을 마칩니다. 폐정합니다.';
 // Outro card (stage 13)
 const OUTRO = { label: '다음 사건', title: '핫팩 사건', note: '곧 개정' };
+const CTA_TEXT = { button: '데이팅앱에서 더 많은 재판 보기', toast: '출시 예정입니다', done: '출시 예정입니다 · 관심 등록됨' }; // trailer end card CTA (CTA_BUTTON_ENABLED)
 // Stage 13 reenactment trailer (TRAILER_ENABLED); OUTRO is the card used when it is off
 const TRAILER_TEXT = {
   reenact: '※ 재연입니다',
@@ -1467,6 +1479,8 @@ const TRAILER_VIGNETTE = 0.7;      // edge darkness
 const TRAILER_POPUP_ENABLED = true;
 const TRAILER_POPUP_NEXT_BUTTON_ENABLED = false; // true: next button / right arrow on the popup works like a click
 const TRAILER_REPLAY_BUTTON = true;              // small replay button on the end card
+const CTA_BUTTON_ENABLED = true;                 // dating-app CTA under the restart button on the end card; a click shows a toast and marks the button until reload
+const CTA_TOAST_MS = 1800;
 const TRAILER_POPUP_DELAY_MS = 400;              // after stage 13 starts (the adjournment has ended)
 const TRAILER_POPUP_WIDTH_PCT = 52;
 const TRAILER_POPUP_DIM = 0.5;
@@ -3773,6 +3787,18 @@ trCard.querySelector('.ask').textContent = TRAILER_TEXT.ask;
 const trRestart = trCard.querySelector('button');
 trRestart.textContent = TRAILER_TEXT.restart;
 trRestart.onclick = () => goTo(0);
+const trCta = trCard.querySelector('.tr-cta'), trToast = trCard.querySelector('.tr-toast');
+trCta.textContent = CTA_TEXT.button;
+trToast.textContent = CTA_TEXT.toast;
+let ctaClicked = false, ctaToastTimer = 0; // in memory only: a reload resets it
+trCta.onclick = () => {
+  ctaClicked = true;
+  trCta.classList.add('done');
+  trCta.textContent = CTA_TEXT.done;
+  trToast.classList.add('show');
+  clearTimeout(ctaToastTimer);
+  ctaToastTimer = setTimeout(() => trToast.classList.remove('show'), CTA_TOAST_MS);
+};
 const trGrain = `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>`; // opaque gray noise, blended as overlay
 [['--tr-box', TRAILER_LETTERBOX_PCT + '%'], ['--tr-sepia', TRAILER_SEPIA], ['--tr-grain-op', TRAILER_GRAIN_OPACITY], ['--tr-vignette', TRAILER_VIGNETTE],
  ['--tr-grain', `url("data:image/svg+xml,${encodeURIComponent(trGrain)}")`], ['--tr-wall-top', TRAILER_COLORS.wallTop], ['--tr-wall-bottom', TRAILER_COLORS.wallBottom],
@@ -3839,7 +3865,8 @@ function resetTrailer() {
   trNodes.forEach(o => { try { o.stop(); } catch {} });
   trNodes.clear();
   Object.values(trChars).forEach(c => { c.classList.remove('talk-open', 'small'); c.lastChild.replaceChildren(); });
-  trBubble.hidden = trSfx.hidden = trCard.hidden = trRestart.hidden = true;
+  trBubble.hidden = trSfx.hidden = trCard.hidden = trRestart.hidden = trCta.hidden = true;
+  trToast.classList.remove('show');
   trTag.textContent = '';
   trCaption([]);
 }
@@ -3959,6 +3986,7 @@ async function playTrailer(g) {
   await wait(T.card - 620);
   if (g !== gen) return;
   trRestart.hidden = false;
+  trCta.hidden = !CTA_BUTTON_ENABLED;
 }
 
 // Stage 13 popup: framed thumbnail of the reenactment, clicked to play the trailer
