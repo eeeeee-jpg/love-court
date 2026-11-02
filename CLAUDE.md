@@ -43,7 +43,7 @@ Demo of the "Love Trial" feature (side content for a dating app), seen from one 
 - Role card: ROLE_CARD_V25, ROLE_OPEN_V26, ROLE_CARD_V27, ROLE_NAME_V30. Logo: LOGO_INTRO_ENABLED.
 - Trailer: TRAILER_ENABLED, TRAILER_POPUP_ENABLED, TRAILER_AVATAR_V23. Gavel: GAVEL_ENABLED.
 - Vote mark over juror heads: VOTE_MARK_V35 (VOTE_MARK_STYLE_V35). Console logs: DEBUG_LOG.
-- Speaker shots (virtual camera): not built.
+- Speaker shots (virtual camera): not built, dropped.
 
 ## Assets
 - images/ in use (WebP, quality 85, converted from the original PNGs, which are in git history before this change): bg-top.webp, bg-front.webp, logo.webp, prosecutor-point.webp, defender-point.webp, prosecutor.webp, defender.webp. judge-neutral.png and its PORTRAIT_FILES entry were removed (JUDGE_USE_PORTRAIT = true keeps the pixel judge). Not made: bg-prosecutor, bg-defender.
@@ -54,6 +54,6 @@ Demo of the "Love Trial" feature (side content for a dating app), seen from one 
 - `main` only (scenario, design and server were merged and deleted). Commit before a large change.
 
 ## Open items
-- Advocates' regular lines have no recordings yet (only their cut-in shouts are voiced).
+- Advocates' regular lines stay silent by decision (only their cut-in shouts are voiced).
 - Deployed on Netlify (https://lovecourt.netlify.app/, GitHub integration). Open over http(s), not file://.
-- Missing assets (speaker-shot backgrounds); speaker shots.
+- Speaker shots and their backgrounds are dropped (not planned).
