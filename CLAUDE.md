@@ -35,7 +35,7 @@ Demo of the "Love Trial" feature (side content for a dating app), seen from one 
 
 ## Systems and switches
 - Dialogue box, trial log (CHAT_READABILITY_V2, CHAT_PADDING_V22, CHAT_INPUT_PAD_V32), gauge (PIXEL_UI_V29 restyle, GAUGE_SCALE_V30).
-- Cut-ins with portraits: CUTIN_PLACEMENT_V20, CUTIN_SOUND_ENABLED, CUTIN_SPEECH_INDEXES, CUTIN_PORTRAIT_V34 (issue 1 uses prosecutor.png / defender.png); recorded shouts CUTIN_VOICE_FILES (CUTIN_VOICE_DELAY_MS, CUTIN_VOICE_VOLUME). Speaking order: SPEECH_ORDER_V24.
+- Cut-ins with portraits: CUTIN_PLACEMENT_V20, CUTIN_SOUND_ENABLED, CUTIN_SPEECH_INDEXES, CUTIN_PORTRAIT_V34 (issue 1 uses prosecutor.webp / defender.webp); recorded shouts CUTIN_VOICE_FILES (CUTIN_VOICE_DELAY_MS, CUTIN_VOICE_VOLUME). Speaking order: SPEECH_ORDER_V24.
 - Sound effects: SOUND_FX_ENABLED, SFX_VOLUME. Loudness match to alien.mp3: SFX_MATCH_ALIEN, SFX_MAX_GAIN. Gavel clip from its first strike: GAVEL_ONSET_THRESHOLD, GAVEL_PREROLL_MS, GAVEL_CLIP_MS. Crowd noise in stages 0~1, fades from stage 2 (NOISE, NOISE_FADE_MS). Keyboard while chat types (stage 8), warning in the filter demo, ping when all 7 votes are in, alien blip on advocate lines (ALIEN_BLIP_MS), trailer alien/cat (TRAILER_SFX_SWITCH_LINE).
 - Furniture/layout: FURNITURE_FIX_V2, BALANCE_FIX_V3, FURNITURE_FIX_V4, STAND_FIX_V5, LAYOUT_FIX_V6, JUROR_RAISE_V7, SEATED_FIX_V9, WALK_FIX_V10, JUDGE_TOPVIEW_V18, PROPS_ENABLED, DOOR_ANIM_ENABLED.
 - Nameplates: NAMEPLATE_FIT_V11, NAMEPLATE_SIZE_V12/V13/V15, NAMEPLATE_ADJUST_V21. Juror name labels: JUROR_LABEL_V33 (JUROR_LABEL_FONT_SCALE_V33, JUROR_SPREAD_V33).
@@ -46,7 +46,7 @@ Demo of the "Love Trial" feature (side content for a dating app), seen from one 
 - Speaker shots (virtual camera): not built.
 
 ## Assets
-- images/ in use: bg-top.png, bg-front.png, logo.png, prosecutor-point.png, defender-point.png, prosecutor.png, defender.png. judge-neutral.png and its PORTRAIT_FILES entry were removed (JUDGE_USE_PORTRAIT = true keeps the pixel judge). Not made: bg-prosecutor, bg-defender.
+- images/ in use (WebP, quality 85, converted from the original PNGs, which are in git history before this change): bg-top.webp, bg-front.webp, logo.webp, prosecutor-point.webp, defender-point.webp, prosecutor.webp, defender.webp. judge-neutral.png and its PORTRAIT_FILES entry were removed (JUDGE_USE_PORTRAIT = true keeps the pixel judge). Not made: bg-prosecutor, bg-defender.
 - sounds/: user-supplied effects and voice recordings; all are in use.
 - reference/ (if recreated) is never used or committed.
 

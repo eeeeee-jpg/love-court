@@ -940,9 +940,9 @@ const DEFENDER_NICK = '라떼';
 
 // ================================================================
 // ===== DESIGN CONFIG: coordinates, sizes/scales, colors, nameplates, images, aspect ratio, timing =====
-const ASPECT_RATIO = 3 / 2; // bg-top.png is 1536x1024
-const BG_TOPVIEW = 'images/bg-top.png';
-const BG_CLOSEUP = 'images/bg-front.png'; // 3:2, same as the container
+const ASPECT_RATIO = 3 / 2; // bg-top.webp is 1536x1024
+const BG_TOPVIEW = 'images/bg-top.webp';
+const BG_CLOSEUP = 'images/bg-front.webp'; // 3:2, same as the container
 // Close-up judge (seated sprite): x center and headTop (% of image), scale × base avatar width (4cqw).
 // scale 2.64 keeps the shoulders inside the chair back (x 44~56); headTop 30 puts the forearms/hands on the desk top (~55)
 const CLOSEUP_JUDGE = { x: 50, headTop: 30, scale: 2.64 };
@@ -952,10 +952,10 @@ const CLOSEUP_ARMS = { y: 18, handX: [3, 7] };
 const CLOSEUP_DESK_CLIP = { x: 14, y: 55, w: 71, h: 35 };
 // Illustrated portraits (cut-in band; judge close-up only if JUDGE_USE_PORTRAIT). A missing file falls back to the pixel sprite
 const JUDGE_USE_PORTRAIT = false;  // false = pixel judge in the close-up (CLOSEUP_JUDGE); true = PORTRAIT_FILES.judge (none now: the pixel judge stays)
-const PORTRAIT_FILES = { prosecutor: 'images/prosecutor-point.png', defender: 'images/defender-point.png' };
+const PORTRAIT_FILES = { prosecutor: 'images/prosecutor-point.webp', defender: 'images/defender-point.webp' };
 // V34: cut-in portrait per speech (SPEECH_PLAN key); other cut-ins keep PORTRAIT_FILES. The hand copy is tuned to the pointing art, so it is off for these
 const CUTIN_PORTRAIT_V34 = true;
-const CUTIN_PORTRAIT_FILES_V34 = { 'issue1.prosecutor': 'images/prosecutor.png', 'issue1.defender': 'images/defender.png' };
+const CUTIN_PORTRAIT_FILES_V34 = { 'issue1.prosecutor': 'images/prosecutor.webp', 'issue1.defender': 'images/defender.webp' };
 const PORTRAIT_AUTO_TRIM = true;   // place by the opaque bounding box (canvas read; blocked on file:// → whole image)
 const PORTRAIT_BLEND = 'auto';     // 'auto' = multiply + console warning if the image has no transparency | 'normal' | 'multiply'
 const PORTRAIT_FLIP = { prosecutor: false, defender: false }; // originals already point at the bubble side
@@ -1355,7 +1355,7 @@ const CHAT_BLUR_PX = 8;
 const CHAT_BACKDROP_DIM = 0.38;     // dark layer over the scene while the trial log shows
 const CHAT_BACKDROP_FADE_MS = 250;
 const CHAT_MESSAGE_GAP_CQW = 1.2; // space between messages, cqw of the chat window
-// Stage 0 logo (logo.png) before the role cards: fades in and waits for a click, then shrinks out and the cards appear
+// Stage 0 logo (logo.webp) before the role cards: fades in and waits for a click, then shrinks out and the cards appear
 // Role select card v25: .frame look (pattern band, gold double border, corner marks, ribbon tab), warm fill, halo, role buttons.
 // false = before -----
 const ROLE_CARD_V25 = true;
@@ -1924,7 +1924,7 @@ const popRoleCard = () => (sizeRoleHeads(), PIXEL_FONT_V28 && applyPixelFont(), 
   { duration: ROLE_CARD_POP_MS, easing: 'ease-out' });
 const logoEl = document.getElementById('logo');
 const logoImg = logoEl.firstChild;
-logoImg.src = 'images/logo.png';
+logoImg.src = 'images/logo.webp';
 stage.style.setProperty('--logo-w', LOGO_WIDTH_PCT + '%');
 stage.style.setProperty('--ar', ASPECT_RATIO);
 stage.style.setProperty('--scale', AVATAR_SCALE);
@@ -3767,7 +3767,7 @@ trGavel.innerHTML = `<svg viewBox="0 0 32 14"><rect x="9" y="5" width="20" heigh
 trHit.innerHTML = '<i></i>'.repeat(12) + '<b></b>'.repeat(12);
 trSfx.textContent = TRAILER_TEXT.smash;
 trCard.querySelector('b').textContent = TRAILER_TEXT.title;
-trCard.querySelector('img').src = 'images/logo.png';
+trCard.querySelector('img').src = 'images/logo.webp';
 trCard.querySelector('.note').textContent = TRAILER_TEXT.note;
 trCard.querySelector('.ask').textContent = TRAILER_TEXT.ask;
 const trRestart = trCard.querySelector('button');
