@@ -195,6 +195,13 @@
   /* Vote mark: ?, ✓, or option short name */
   .mark { padding: .15em .35em; }
   .mark:empty { display: none; }
+  /* Vote mark v35: round badge, color per state (vars set by setMark), Galmuri bold, pixel check icon */
+  .mark.vm35 { width: var(--vm-size); height: var(--vm-size); padding: 0; box-sizing: border-box; border-radius: 50%;
+               display: flex; align-items: center; justify-content: center; border: var(--vm-border) solid var(--vm-border-color);
+               background: var(--vm-bg); color: var(--vm-fg); font-family: 'GalmuriP11', var(--font-body); font-weight: 700;
+               -webkit-font-smoothing: none; box-shadow: var(--vm-shadow); }
+  .mark.vm35:empty { display: none; }
+  .mark.vm35 svg { width: 58%; shape-rendering: crispEdges; }
   @keyframes bob { from { transform: translate(-50%, 0); } to { transform: translate(-50%, -30%); } }
 
   /* Center panel: position and size come from config PANEL */
@@ -854,12 +861,6 @@ const CASE = {
   issues: ['12시간 연락이 끊긴 것은 상대에 대한 배려 부족인가?', '밤새 연락을 시도하고 화를 낸 것은 정당한 걱정인가, 지나친 구속인가?'],
   options: OPTIONS,
 };
-// Case generation: on load, replace CASE title/summary/issues, OPENING and ISSUE_DEBATE titles with /api/generate output.
-// Any failure keeps the fixed case above. Debate lines, shouts and verdict texts stay fixed
-const CASE_GENERATION_ENABLED = false;
-const CASE_GENERATION_URL = 'http://localhost:8787/api/generate';
-const CASE_SUMMARY_FORMAT = 'A의 입장: {a} B의 입장: {b}';
-const ISSUE_TITLE_FORMAT = '쟁점 {n}. {text}';
 const OPENING = {
   prosecutor: '피고 A는 연락이 닿지 않는 상황을 미리 알리지 않아, 상대가 밤새 불안에 떨게 했습니다. 이는 배려의 문제라고 주장합니다.',
   defender: '피고는 배터리가 방전된 채 잠들었을 뿐입니다. 고의 없는 일에 책임을 묻는 것은 과하다고 주장합니다.',
@@ -951,6 +952,9 @@ const CLOSEUP_DESK_CLIP = { x: 14, y: 55, w: 71, h: 35 };
 // Illustrated portraits (cut-in band; judge close-up only if JUDGE_USE_PORTRAIT). A missing file falls back to the pixel sprite
 const JUDGE_USE_PORTRAIT = false;  // false = pixel judge in the close-up (CLOSEUP_JUDGE); true = judge-neutral.png (preloaded only then)
 const PORTRAIT_FILES = { judge: 'images/judge-neutral.png', prosecutor: 'images/prosecutor-point.png', defender: 'images/defender-point.png' };
+// V34: cut-in portrait per speech (SPEECH_PLAN key); other cut-ins keep PORTRAIT_FILES. The hand copy is tuned to the pointing art, so it is off for these
+const CUTIN_PORTRAIT_V34 = true;
+const CUTIN_PORTRAIT_FILES_V34 = { 'issue1.prosecutor': 'images/prosecutor.png', 'issue1.defender': 'images/defender.png' };
 const PORTRAIT_AUTO_TRIM = true;   // place by the opaque bounding box (canvas read; blocked on file:// → whole image)
 const PORTRAIT_BLEND = 'auto';     // 'auto' = multiply + console warning if the image has no transparency | 'normal' | 'multiply'
 const PORTRAIT_FLIP = { prosecutor: false, defender: false }; // originals already point at the bubble side
@@ -1174,7 +1178,14 @@ const JUROR_LABEL_V3 = { fontScale: 0.52, roleScale: '0.72em', padding: '.1em .4
 // false = JUROR_LABEL_V3.fontScale and the spacing above
 const JUROR_LABEL_V33 = true;
 const JUROR_LABEL_FONT_SCALE_V33 = 0.68; // v3 0.52 (x1.3)
-const JUROR_SPREAD_V33 = 1.1;            // juror x distance from the center and bench width x this
+const JUROR_SPREAD_V33 = 1.1;
+// Vote mark v35 (juror head badge): false = the old white pill with ?, ✓ or A/B
+const VOTE_MARK_V35 = true;
+const VOTE_MARK_STYLE_V35 = { size: '1.9em', border: '3px', borderColor: '#1a1a1a',
+  shadow: '0 0 0 1.5px rgba(255,255,255,.75), 0 2px 5px rgba(0,0,0,.6)', // white outer ring + drop shadow
+  pulseMs: 320, pulseScale: 1.3,                                         // ? → ✓/A/B
+  colors: { pending: ['#8a8f98', '#fff'], done: ['#2e9e4f', '#fff'], A: ['#2f6fd6', '#fff'], B: ['#d23a3a', '#fff'] } }; // [background, text]
+const VOTE_CHECK_SVG_V35 = '<svg viewBox="0 0 10 8"><path fill="currentColor" d="M0 3h2v2H0zM1 4h2v2H1zM2 5h2v2H2zM3 6h2v2H3zM4 5h2v2H4zM5 4h2v2H5zM6 3h2v2H6zM7 2h2v2H7zM8 1h2v2H8z"/></svg>';            // juror x distance from the center and bench width x this
 // v2/v3: prop sizes stay as in DESK (old top); v2/v3 = center in % of that version's top, clear of the seated avatar's head/arms
 const DESK_PROPS = {
   prosecutor: [
@@ -1279,8 +1290,23 @@ const GAVEL_GAP_MS = 450; // closing line strike (stage 12)
 // Sound files in sounds/: gavel clip on the 3 verdict strikes, crowd noise on stages 0~1, alien -> angry cat in the trailer.
 // false = the synthesized gavel only, no file sounds
 const SOUND_FX_ENABLED = true;
-const SFX_VOLUME = { noise: 0.15, gavel: 1, alien: 0.5, cat: 0.8 };
-const GAVEL_CLIP_MS = 400;          // gavel.mp3 holds 2 strikes: play only this much from the start (tune by ear)
+const SFX_VOLUME = { noise: 0.15, gavel: 1, alien: 0.5, cat: 0.8, keyboard: 0.35, warning: 0.8, blip: 0.2, ping: 0.8 };
+const ALIEN_BLIP_MS = 250;          // stages 5~7: alien.mp3 played this long (from its onset) when a plain advocate line starts
+// Recorded cut-in shouts (portrait close-up bubble), keyed like CUTIN_SHOUTS; played after the cut-in sweep (cutinSound, 250 ms)
+const CUTIN_VOICE_FILES = {
+  'issue1.prosecutor': 'prosecutor_01.mp3', 'issue2.prosecutor': 'prosecutor_02.mp3',
+  'issue1.defender':   'defender_01.mp3',   'issue2.defender':   'defender_02.mp3',
+};
+const CUTIN_VOICE_DELAY_MS = 250;
+const CUTIN_VOICE_VOLUME = 1;
+// Judge line recordings by stage (3 opening, 4 case intro, 7 instructions, 11 verdict, 12 adjournment); the stage waits for the end
+const JUDGE_VOICE_FILES = { 3: 'judge_01_gaejeong.mp3', 4: 'judge_02_sageon_sogae.mp3', 7: 'judge_03_toron_annae.mp3',
+                            11: 'judge_04_pankyulmun.mp3', 12: 'judge_05_pyejeong.mp3' };
+const JUDGE_VOICE_VOLUME = 1;
+const GAVEL_CLIP_MS = 400;          // gavel.mp3 holds 2 strikes: play this much from the first strike's onset
+const GAVEL_ONSET_THRESHOLD = 0.2;  // onset = first sample above this share of the file's peak (found after decoding)
+const GAVEL_PREROLL_MS = 10;        // start this much before the onset so the attack isn't cut
+const GAVEL_ONSET_MS_FALLBACK = 0;  // used when the file can't be decoded (file://): copy the value logged as '[sfx] gavel onset'
 const NOISE_FADE_MS = 1500;         // crowd noise fade-out when stage 2 (judge enters) starts
 const TRAILER_SFX_SWITCH_LINE = 3;  // trailer line (1-based) where alien.mp3 stops and angry-cat.mp3 plays
 // Gavel and crowd noise get a measured gain so their RMS level equals alien.mp3 at SFX_VOLUME.alien (needs the page over http;
@@ -1290,11 +1316,6 @@ const SFX_MAX_GAIN = 8; // the gain is also capped so the peak stays under 1 (no
 // Close-up gavel, 3 strikes after the verdict reading. x, y = sound block center on the desk top (% of image);
 // length = gavel length, block = sound block width (cqw); raiseDeg = lift angle around the grip end; times in ms
 const GAVEL = { x: 41, y: 55.5, length: 8, block: 3, raiseDeg: 50, raiseMs: 250, strikeMs: 100, gapMs: 700, shakeMs: 250, pauseMs: 1000 };
-// TTS: each utterance ends on onend, onerror or this timer (chars × ms + 1500), whichever comes first
-const SPEECH_MS_PER_CHAR = 250;
-// Verdict reading (stage 11) via the local server's OpenAI TTS; any failure falls back to the browser TTS (speak)
-const TTS_API_ENABLED = true;
-const TTS_API_URL = 'http://localhost:8787/api/tts';
 const SAFETY_UNLOCK_MS = 60000; // a stage that hasn't finished by then (except ones waiting for input) enables ▶ anyway
 const DEBUG_LOG = true;         // console logs for stages and the verdict sequence
 // Verdict reaction (stage 12 start): the winner jumps under fireworks and floats away with balloons,
@@ -1444,9 +1465,6 @@ const TRAILER_VIGNETTE = 0.7;      // edge darkness
 // Popup before the trailer (stage 13): waits for a click. false: the trailer plays as soon as stage 13 starts
 const TRAILER_POPUP_ENABLED = true;
 const TRAILER_POPUP_NEXT_BUTTON_ENABLED = false; // true: next button / right arrow on the popup works like a click
-// TEMP: case generation API test panel (top-right). Delete with its block at the end of the script
-const TEST_PANEL_ENABLED = false;
-const TEST_PANEL_URL = 'http://localhost:8787/api/generate'; // absolute so it works from any page port
 const TRAILER_REPLAY_BUTTON = true;              // small replay button on the end card
 const TRAILER_POPUP_DELAY_MS = 400;              // after stage 13 starts (the adjournment has ended)
 const TRAILER_POPUP_WIDTH_PCT = 52;
@@ -1977,7 +1995,19 @@ if (!ROLE_OPEN_V26) { // v26 builds the role buttons without nicknames
 }
 
 AVATARS.find(a => a.id === ME).label += ' (나)';
-const setMark = (id, text) => els[id].querySelector('.mark').textContent = text;
+const setMark = (id, text) => {
+  const m = els[id].querySelector('.mark');
+  if (!VOTE_MARK_V35) return m.textContent = text;
+  const S = VOTE_MARK_STYLE_V35, state = text === '?' ? 'pending' : text === '✓' ? 'done' : text;
+  const [bg, fg] = S.colors[state] ?? S.colors.pending, prev = m.dataset.state;
+  m.classList.add('vm35');
+  m.dataset.state = state;
+  Object.entries({ size: S.size, border: S.border, 'border-color': S.borderColor, shadow: S.shadow, bg, fg })
+    .forEach(([k, v]) => m.style.setProperty('--vm-' + k, v));
+  if (state === 'done') m.innerHTML = VOTE_CHECK_SVG_V35; else m.textContent = text;
+  if (prev === 'pending' && state !== 'pending')
+    m.animate([{ scale: 1 }, { scale: S.pulseScale }, { scale: 1 }], { duration: S.pulseMs, easing: 'ease-out' });
+};
 let VERDICT = null; // { result, counts, votes } — input for reading / AI verdict text
 
 const tag = (t, text) => Object.assign(document.createElement(t), { textContent: text });
@@ -2007,33 +2037,6 @@ if (CASE_PANEL_STYLE === 'document') {
 Object.assign(casePanel.style, { left: '50%', top: caseArea / 2 + '%', width: CASE_PANEL.widthPct + '%', height: 'auto' });
 [['--case-title', CASE_PANEL.titleCqw], ['--case-body', CASE_PANEL.bodyCqw], ['--case-issue', CASE_PANEL.issueCqw],
  ['--case-dim', CASE_BACKDROP_DIM], ['--case-blur', CASE_BACKDROP_BLUR_PX + 'px']].forEach(([k, v]) => stage.style.setProperty(k, v));
-// Swap in a generated case (CASE_GENERATION_ENABLED). Returns false and changes nothing when the shape is wrong
-function applyGeneratedCase(r) {
-  const str = v => typeof v === 'string' && v.trim() !== '';
-  if (!r || !str(r.title) || !str(r.positionA) || !str(r.positionB) || !Array.isArray(r.issues) || !r.issues.length || !r.issues.every(str)) return false;
-  CASE.title = r.title;
-  CASE.summary = CASE_SUMMARY_FORMAT.replace('{a}', r.positionA).replace('{b}', r.positionB);
-  CASE.issues = r.issues.slice();
-  OPENING.prosecutor = r.positionB; // prosecutor argues B's side, defender A's
-  OPENING.defender = r.positionA;
-  // shortcut: only the first ISSUE_DEBATE.length issues get a debate block (lines stay fixed); generating lines needs a bigger API
-  ISSUE_DEBATE.forEach((d, i) => { if (r.issues[i]) d.title = ISSUE_TITLE_FORMAT.replace('{n}', i + 1).replace('{text}', r.issues[i]); });
-  document.getElementById('caseTitle').textContent = CASE.title;
-  [casePanel, caseBody].forEach(root => {
-    root.querySelectorAll('h2').forEach(h => h.textContent = CASE.title);
-    const p = root.querySelector('p');
-    if (p) p.textContent = CASE.summary;
-  });
-  const ol = casePanel.querySelector('ol') || caseBody.querySelector('ol');
-  ol.replaceChildren(...CASE.issues.map(t => tag('li', t)));
-  return true;
-}
-if (CASE_GENERATION_ENABLED) {
-  fetch(CASE_GENERATION_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'generate_case', payload: null }) })
-    .then(res => res.ok ? res.json() : Promise.reject(new Error('HTTP ' + res.status)))
-    .then(data => { if (!applyGeneratedCase(data && data.result)) throw new Error('bad case shape'); })
-    .catch(err => console.warn('[case generation] fixed case kept:', err.message));
-}
 // Case panel: shrink the text in 4% steps, then tighten the line height, until it fits CASE_PANEL.maxHeightPct (needs the panel shown)
 function fitCasePanel() {
   const max = stage.clientHeight * Math.min(CASE_PANEL.maxHeightPct, caseArea - 8) / 100; // 8: room for the tab/ribbon and seal overhang
@@ -2895,6 +2898,12 @@ Object.entries(PORTRAIT_FILES).forEach(([id, src]) => {
   img.onerror = () => console.warn('[court] portrait missing, pixel sprite instead:', src);
   img.src = src;
 });
+if (CUTIN_PORTRAIT_V34) Object.entries(CUTIN_PORTRAIT_FILES_V34).forEach(([key, src]) => {
+  const img = new Image();
+  img.onload = () => PORTRAITS[key] = measurePortrait(img);
+  img.onerror = () => console.warn('[court] cut-in portrait missing, default instead:', src);
+  img.src = src;
+});
 // Judge speaking cut: the front close-up (pixel judge, or the portrait if JUDGE_USE_PORTRAIT)
 const judgeCut = on => closeup.classList.toggle('show', on);
 // Top-view background: keep the fallback floor if the image is missing
@@ -3016,49 +3025,10 @@ async function returnSeat(id, g) {
 const OTHERS = AVATARS.slice(1).map(a => a.id);
 
 const dbg = (...args) => DEBUG_LOG && console.log('[court]', ...args);
-// Resolves with what ended it: 'onend' | 'error' | 'timer'
-function speak(text) {
-  if (!('speechSynthesis' in window)) return wait(text.length * 120).then(() => 'timer');
-  return new Promise(r => {
-    let settled = false; // one completion per utterance
-    const finish = why => { if (settled) return; settled = true; clearTimeout(timer); r(why); };
-    const timer = setTimeout(() => finish('timer'), text.length * SPEECH_MS_PER_CHAR + 1500);
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'ko-KR';
-    u.onend = () => finish('onend');
-    u.onerror = () => finish('error');
-    speak.current = u; // keep a reference: Chrome can drop onend for a garbage-collected utterance
-    speechSynthesis.speak(u);
-  });
-}
-// Audio blob URL for a line from /api/tts, cached per text so the reading can prefetch every line
-const ttsCache = new Map();
-function ttsFetch(text) {
-  if (!ttsCache.has(text)) {
-    const p = fetch(TTS_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) })
-      .then(res => res.ok ? res.blob() : Promise.reject(new Error('HTTP ' + res.status)))
-      .then(b => URL.createObjectURL(b));
-    p.catch(() => ttsCache.delete(text)); // retry next time
-    ttsCache.set(text, p);
-  }
-  return ttsCache.get(text);
-}
-// Same contract as speak(): resolves with 'audio' when played, otherwise falls back to speak(text)
-async function speakVerdict(text) {
-  if (!TTS_API_ENABLED) return speak(text);
-  try {
-    const url = await ttsFetch(text);
-    const a = speakVerdict.current = new Audio(url);
-    await new Promise((ok, fail) => { a.onended = ok; a.onerror = () => fail(new Error('audio error')); a.play().catch(fail); });
-    return 'audio';
-  } catch (e) {
-    console.warn('[tts] browser TTS fallback:', e.message);
-    return speak(text);
-  }
-}
 
 let audioCtx = null;
 function gavelSound() {
+  if (SOUND_FX_ENABLED) return gavelClip(); // the 45~160 Hz synth is nearly inaudible on laptop speakers
   try {
     audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
     audioCtx.resume();
@@ -3110,16 +3080,26 @@ let sfxMatch = null; // { gavel: { buf, gain }, noise: { buf, gain } } once meas
 const sfxCtx = () => audioCtx ??= new (window.AudioContext || window.webkitAudioContext)();
 const sfxLoad = name => fetch('sounds/' + name).then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('HTTP ' + r.status)))
   .then(b => sfxCtx().decodeAudioData(b));
-function sfxLevel(buf, ms) { // { rms, peak } over the first ms (whole buffer without ms), all channels
-  const n = ms ? Math.min(buf.length, Math.round(buf.sampleRate * ms / 1000)) : buf.length;
+function sfxLevel(buf, ms, fromMs = 0) { // { rms, peak } over ms from fromMs (to the end without ms), all channels
+  const i0 = Math.min(buf.length - 1, Math.round(buf.sampleRate * fromMs / 1000));
+  const n = ms ? Math.min(buf.length, i0 + Math.round(buf.sampleRate * ms / 1000)) : buf.length;
   let sum = 0, peak = 0;
   for (let c = 0; c < buf.numberOfChannels; c++) {
     const d = buf.getChannelData(c);
-    for (let i = 0; i < n; i++) { sum += d[i] * d[i]; peak = Math.max(peak, Math.abs(d[i])); }
+    for (let i = i0; i < n; i++) { sum += d[i] * d[i]; peak = Math.max(peak, Math.abs(d[i])); }
   }
-  return { rms: Math.sqrt(sum / (n * buf.numberOfChannels)), peak };
+  return { rms: Math.sqrt(sum / ((n - i0) * buf.numberOfChannels)), peak };
 }
-function playBuf({ buf, gain }, loop = false, ms) {
+// First sample louder than share x the file's peak (any channel), minus GAVEL_PREROLL_MS, in ms
+function sfxOnsetMs(buf, share) {
+  const limit = sfxLevel(buf).peak * share, chans = [...Array(buf.numberOfChannels)].map((_, c) => buf.getChannelData(c));
+  for (let i = 0; i < buf.length; i++) {
+    if (chans.some(d => Math.abs(d[i]) > limit)) return Math.max(0, i / buf.sampleRate * 1000 - GAVEL_PREROLL_MS);
+  }
+  return 0;
+}
+let gavelOnsetMs = GAVEL_ONSET_MS_FALLBACK;
+function playBuf({ buf, gain }, loop = false, ms, fromMs = 0) {
   const ctx = sfxCtx();
   ctx.resume();
   const src = ctx.createBufferSource(), vol = ctx.createGain();
@@ -3127,15 +3107,60 @@ function playBuf({ buf, gain }, loop = false, ms) {
   src.loop = loop;
   vol.gain.value = gain;
   src.connect(vol).connect(ctx.destination);
-  src.start(0, 0, ms ? ms / 1000 : undefined);
+  src.start(0, fromMs / 1000, ms ? ms / 1000 : undefined);
   return { src, vol };
 }
 let gavelClipTimer = 0;
 function gavelClip() {
-  if (sfxMatch) return void playBuf(sfxMatch.gavel, false, GAVEL_CLIP_MS);
-  const a = sfxPlay('gavel.mp3', SFX_VOLUME.gavel);
+  if (sfxMatch) return void playBuf(sfxMatch.gavel, false, GAVEL_CLIP_MS, gavelOnsetMs);
+  const a = sfxAudio('gavel.mp3', SFX_VOLUME.gavel);
+  a.currentTime = gavelOnsetMs / 1000;
+  a.play().catch(e => console.warn('[sfx] gavel.mp3', e.message));
   clearTimeout(gavelClipTimer);
   gavelClipTimer = setTimeout(() => a.pause(), GAVEL_CLIP_MS);
+}
+// Short alien.mp3 blip on its own element (the trailer loop uses the shared one)
+// Cut-in shout recording for a speech (SPEECH_PLAN key); resolves when it ends, fails or is stopped. No file: resolves at once
+function cutinVoice(id, text, g) {
+  const file = CUTIN_VOICE_FILES[SPEECH_PLAN.find(x => x.side === id && x.text === text)?.id];
+  if (!file) return Promise.resolve();
+  return wait(CUTIN_VOICE_DELAY_MS).then(() => g !== gen ? null : new Promise(done => {
+    const a = cutinVoice.current = new Audio('sounds/' + file);
+    a.volume = CUTIN_VOICE_VOLUME;
+    a.onended = a.onerror = a.onpause = done; // onpause: stopPlayback
+    a.play().catch(e => { console.warn('[sfx] cut-in voice', file, e.message); done(); });
+  }));
+}
+// Judge recording for a stage (JUDGE_VOICE_FILES); resolves when it ends, fails or is stopped. No file: resolves at once
+function judgeVoice(stage, g) {
+  const file = SOUND_FX_ENABLED && JUDGE_VOICE_FILES[stage];
+  judgeVoice.current = null;
+  if (!file || g !== gen) return Promise.resolve();
+  const a = judgeVoice.current = new Audio('sounds/' + file);
+  a.volume = JUDGE_VOICE_VOLUME;
+  return new Promise(done => {
+    a.onended = a.onerror = a.onpause = done; // onpause: stopPlayback
+    a.play().catch(e => { console.warn('[sfx] judge voice', file, e.message); done(); });
+  });
+}
+// Length of the current judge recording in ms; 0 if there is none or it fails to load
+function judgeVoiceMs() {
+  const a = judgeVoice.current;
+  return new Promise(r => {
+    if (!a) return r(0);
+    if (a.readyState >= 1) return r(a.duration * 1000);
+    a.addEventListener('loadedmetadata', () => r(a.duration * 1000), { once: true });
+    a.addEventListener('error', () => r(0), { once: true });
+  });
+}
+let alienOnsetMs = 0, blipTimer = 0;
+function alienBlip() {
+  const a = alienBlip.el ??= new Audio('sounds/alien.mp3');
+  a.volume = SFX_VOLUME.blip;
+  a.currentTime = alienOnsetMs / 1000;
+  a.play().catch(e => console.warn('[sfx] alien blip', e.message));
+  clearTimeout(blipTimer);
+  blipTimer = setTimeout(() => a.pause(), ALIEN_BLIP_MS);
 }
 const NOISE = 'people-talking-in-cinema-before-movie-starts-65662.mp3';
 let noiseFade = 0, noiseNode = null, noiseStopTimer = 0;
@@ -3179,13 +3204,19 @@ function noiseFadeOut() {
 if (SOUND_FX_ENABLED && SFX_MATCH_ALIEN) {
   Promise.all(['alien.mp3', 'gavel.mp3', NOISE].map(sfxLoad)).then(([alien, gavel, noise]) => {
     const target = sfxLevel(alien).rms * SFX_VOLUME.alien;
-    const fit = (buf, ms) => { const { rms, peak } = sfxLevel(buf, ms); return { buf, gain: Math.min(SFX_MAX_GAIN, target / rms, 1 / peak) }; };
-    sfxMatch = { gavel: fit(gavel, GAVEL_CLIP_MS), noise: fit(noise) };
+    const fit = (buf, ms, fromMs) => { const { rms, peak } = sfxLevel(buf, ms, fromMs); return { buf, gain: Math.min(SFX_MAX_GAIN, target / rms, 1 / peak) }; };
+    gavelOnsetMs = sfxOnsetMs(gavel, GAVEL_ONSET_THRESHOLD);
+    alienOnsetMs = sfxOnsetMs(alien, GAVEL_ONSET_THRESHOLD); // same rule: the blip starts where the alien sound does
+    console.info('[sfx] gavel onset', Math.round(gavelOnsetMs), 'ms, alien onset', Math.round(alienOnsetMs), 'ms');
+    sfxMatch = { gavel: fit(gavel, GAVEL_CLIP_MS, gavelOnsetMs), noise: fit(noise) };
     console.info('[sfx] matched gains: gavel', sfxMatch.gavel.gain.toFixed(2), 'noise', sfxMatch.noise.gain.toFixed(2));
     if (cur < 2) { sfx[NOISE]?.pause(); noiseStart(); } // swap the <audio> noise for the matched one
   }).catch(e => console.warn('[sfx] loudness match off, SFX_VOLUME used:', e.message));
   ['pointerdown', 'keydown'].forEach(t => addEventListener(t, () => audioCtx?.resume(), { once: true })); // autoplay unlock
-}
+} else if (SOUND_FX_ENABLED) sfxLoad('gavel.mp3').then(b => {
+  gavelOnsetMs = sfxOnsetMs(b, GAVEL_ONSET_THRESHOLD);
+  console.info('[sfx] gavel onset', Math.round(gavelOnsetMs), 'ms');
+}).catch(e => console.warn('[sfx] gavel onset not found, GAVEL_ONSET_MS_FALLBACK used:', e.message));
 async function gavelStrikes(times, g, onHit) {
   const block = gavelEl.firstChild;
   closeJudge.classList.add('striking'); // v9 hideHands: the gavel hand shows only during the strikes
@@ -3231,16 +3262,23 @@ function typeMsg(span, onDone) {
   span.replaceChildren(...chars);
   chars.forEach(c => c.style.visibility = 'hidden'); // the bubble keeps its full size while typing
   let k = 0;
-  const finish = typeMsg.finish = () => { loop('chatType', false); chars.forEach(c => c.style.visibility = ''); onDone?.(); };
+  if (SOUND_FX_ENABLED && chars.length && cur === 8) sfxPlay('keyboard.mp3', SFX_VOLUME.keyboard, true); // jury discussion log only; loops while typing
+  const finish = typeMsg.finish = () => {
+    if (SOUND_FX_ENABLED && typeMsg.finish === finish) sfxStop('keyboard.mp3'); // a newer bubble owns the sound otherwise
+    loop('chatType', false); chars.forEach(c => c.style.visibility = ''); onDone?.();
+  };
   loop('chatType', true, () => { chars[k++].style.visibility = ''; if (k >= chars.length) finish(); }, TYPEWRITER_MS_PER_CHAR);
   return finish;
 }
 async function say(id, text, ms, g, cutin) {
   await stepForth(id, g);
   if (g !== gen) return;
-  if (cutin) await cutinIntro(id, cutin, g); // stays on screen through the line
+  const shout = SOUND_FX_ENABLED && cutin ? cutinVoice(id, text, g) // starts with the cut-in, after its sweep sound
+    : id === 'judge' ? judgeVoice(cur, g) : null; // judge's recorded line (stage 7)
+  if (cutin) await cutinIntro(id, cutin, g, text); // stays on screen through the line
   if (g !== gen) return;
   if (id === 'judge') judgeCut(true);
+  if (SOUND_FX_ENABLED && !cutin && (id === 'prosecutor' || id === 'defender') && cur >= 5 && cur <= 7) alienBlip();
   const m = addMsg('msg cur', tag('b', AVATARS.find(a => a.id === id).label), tag('span', text));
   const inBox = !seatOf(id).color; // judge/prosecutor/defender speak in the dialogue box; jurors only in the chat
   const entry = gaugeEntry(id), toGauge = () => g === gen && gaugeApply(entry); // the gauge moves once, when the line finishes typing
@@ -3253,6 +3291,7 @@ async function say(id, text, ms, g, cutin) {
     if (inBox) speech(id, text, ms);
     await talk(els[id], ms, g);
   }
+  await shout; // a shout longer than the line holds the next line back
   if (g !== gen) return;
   typed(); // stays highlighted (cur) until the next message
   if (inBox) lineDone();
@@ -3485,9 +3524,10 @@ function cutinSound() {
   } catch {} // no Web Audio: silent cut-in
 }
 // Entrance (CUTIN_INTRO_MS); the cut-in then stays until cutinOut
-async function cutinIntro(id, text, g) {
+async function cutinIntro(id, text, g, line) {
   const C = CUTIN, left = id === 'prosecutor'; // prosecutor's sprite on the left, defender's on the right
-  const [dim, flash, band, pt, burst, handPt] = cutinEl.children, p = PORTRAITS[id];
+  const alt = CUTIN_PORTRAIT_V34 ? PORTRAITS[SPEECH_PLAN.find(x => x.side === id && x.text === line)?.id] : null;
+  const [dim, flash, band, pt, burst, handPt] = cutinEl.children, p = alt ?? PORTRAITS[id];
   const who = p ? [pt, handPt] : [band.firstChild]; // portrait (+ hand copy), or the pixel sprite if the file is missing
   cutinEl.className = left ? 'left' : 'right';
   cutinEl.hidden = false;
@@ -3495,7 +3535,7 @@ async function cutinIntro(id, text, g) {
   band.style.setProperty('--stripe', CUTIN_BAND[id].stripe);
   band.firstChild.hidden = !!p;
   cutPortrait.hidden = !p;
-  cutHand.hidden = !p || !CUTIN_HAND_OVER_BUBBLE;
+  cutHand.hidden = !p || !CUTIN_HAND_OVER_BUBBLE || !!alt;
   if (p) {
     const top = 50 - C.bandHeight / 2 - CUTIN_PORTRAIT_POPOUT * C.bandHeight, h = CUTIN_PORTRAIT_H * C.bandHeight;
     // Keep the whole opaque box (head, shoulders) on screen: pull the center back in if the offset pushes it out
@@ -3546,6 +3586,7 @@ async function filterDemo(g) {
   for (let i = 0; i < 6; i++) { chatInput.value += '●'; await wait(100); }
   if (g !== gen) return;
   notice.textContent = FILTER_NOTICE;
+  if (SOUND_FX_ENABLED) sfxPlay('warning.mp3', SFX_VOLUME.warning);
   chatInput.classList.remove('shake');
   chatInput.offsetWidth; // restart the animation
   chatInput.classList.add('shake');
@@ -3866,10 +3907,12 @@ async function playTrailer(g) {
     if (SOUND_FX_ENABLED) {
       if (i === 0) sfxPlay('alien.mp3', SFX_VOLUME.alien, true);
       if (i + 1 === TRAILER_SFX_SWITCH_LINE) { sfxStop('alien.mp3'); sfxPlay('angry-cat.mp3', SFX_VOLUME.cat); }
+      if (i + 1 > TRAILER_SFX_SWITCH_LINE) sfxPlay('alien.mp3', SFX_VOLUME.alien, true); // lines after the cat get the alien back
     }
     await wait(T[key]);
     setTalking(el, false);
   }
+  if (SOUND_FX_ENABLED) sfxStop('alien.mp3'); // the dialogue is over: no alien under the smash
   if (g !== gen) return;
   // 5 smash: the gavel comes in tilted, winds up, then flattens the pack
   const t0 = performance.now();
@@ -4023,7 +4066,7 @@ const STAGES = [
     setTalking(els.judge, true);
     const line = '지금부터 개정합니다';
     speech('judge', line);
-    const t = speak(line);
+    const t = Promise.all([typing.done.then(() => wait(LINE_HOLD_AFTER_TYPING_MS)), judgeVoice(3, g)]);
     await wait(600);
     if (g === gen) sit(OTHERS, true);
     await t;
@@ -4038,7 +4081,7 @@ const STAGES = [
     fitCasePanel();
     judgeCut(true);
     setTalking(els.judge, true);
-    await wait(2500);
+    await Promise.all([wait(2500), judgeVoice(4, g)]);
     if (g !== gen) return;
     setTalking(els.judge, false);
     lineDone();
@@ -4094,6 +4137,7 @@ const STAGES = [
       if (g !== gen) return;
       setMark(id, '✓');
     }
+    if (SOUND_FX_ENABLED) sfxPlay('ping.mp3', SFX_VOLUME.ping); // all 7 votes in
     await wait(1000);
     if (g !== gen) return;
     const counts = Object.fromEntries(OPTIONS.map(o => [o, 0]));
@@ -4106,20 +4150,25 @@ const STAGES = [
     votePanel.hidden = true;
     closeup.classList.add('show');
     await wait(800);
-    if ('speechSynthesis' in window) speechSynthesis.cancel();
     const lines = JUDGMENT_TEXTS[VERDICT.result].split(/(?<=[.!?])\s+/);
     lines.push(JUDGMENT_RIDERS[VERDICT.result]);
-    if (TTS_API_ENABLED) lines.forEach(l => ttsFetch(l).catch(() => {})); // prefetch so lines play back to back
-    dbg('reading start,', lines.length, 'utterances');
+    dbg('reading start,', lines.length, 'lines');
+    // With the recording: each line ends at its share (by length) of the audio, so the text keeps pace with the voice
+    const voice = judgeVoice(11, g), voiceMs = await judgeVoiceMs(), t0 = performance.now();
+    const chars = lines.reduce((n, l) => n + l.length, 0);
+    let done = 0;
     for (const [i, line] of lines.entries()) {
       if (g !== gen) return;
       caption(line, i === lines.length - 1 ? { rider: true } : { id: 'judge' });
       setTalking(closeJudge, true);
-      const why = await speakVerdict(line);
+      done += line.length;
+      await (voiceMs ? Promise.all([typing.done, wait(t0 + voiceMs * done / chars - performance.now())])
+                     : typing.done.then(() => wait(LINE_HOLD_AFTER_TYPING_MS)));
       setTalking(closeJudge, false);
       lineDone();
-      dbg('utterance', i + 1, 'done:', why);
+      dbg('line', i + 1, 'done');
     }
+    await voice;
     if (g !== gen) return;
     dbg('gavel start');
     let stamp = null;
@@ -4140,7 +4189,7 @@ const STAGES = [
     caption(CLOSING_LINE, { id: 'judge' });
     judgeCut(true);
     gavel(1, g);
-    await talk(els.judge, 2500, g);
+    await Promise.all([talk(els.judge, 2500, g), judgeVoice(12, g)]);
     if (g !== gen) return;
     lineDone();
     judgeCut(false);
@@ -4200,10 +4249,11 @@ async function runStage(i) {
 function stopPlayback() {
   gen++;
   pickRole = lineSkip = null;
-  if ('speechSynthesis' in window) speechSynthesis.cancel();
-  speakVerdict.current?.pause(); // its pending promise is dropped: the stage bails on the gen check
   sfxStop('alien.mp3');
   sfxStop('angry-cat.mp3');
+  sfxStop('keyboard.mp3'); // typeMsg's finish doesn't run when its timer is cleared below
+  cutinVoice.current?.pause();
+  judgeVoice.current?.pause();
   [...timers.keys()].forEach(k => loop(k, false));
   stage.classList.remove('gavel', 'gavel-hit');
 }
@@ -4279,45 +4329,6 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') nextBtn.click();
 });
 goTo(0);
-
-// ===== TEMP TEST PANEL (TEST_PANEL_ENABLED): remove this whole block when done =====
-if (TEST_PANEL_ENABLED) {
-  const panel = document.createElement('div');
-  panel.style.cssText = 'position:fixed;top:8px;right:8px;z-index:99999;width:360px;max-width:calc(100vw - 16px);' +
-    'background:#ff0;color:#000;border:4px dashed #f00;padding:8px;font:12px/1.4 monospace;box-sizing:border-box';
-  panel.innerHTML = '<div style="font-weight:bold;color:#f00">TEMP TEST PANEL</div>' +
-    '<button type="button" style="margin:4px 0;padding:4px 8px;font:inherit;cursor:pointer">사건 생성 테스트</button>' +
-    '<pre style="margin:0;max-height:50vh;overflow:auto;white-space:pre-wrap;background:#fff;padding:4px"></pre>';
-  const btn = panel.querySelector('button');
-  const out = panel.querySelector('pre');
-  // keep clicks/keys from reaching the stage handlers
-  ['click', 'keydown'].forEach(t => panel.addEventListener(t, e => e.stopPropagation()));
-  btn.addEventListener('click', async () => {
-    btn.disabled = true;
-    out.textContent = '...';
-    try {
-      const res = await fetch(TEST_PANEL_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'generate_case', payload: null })
-      });
-      const text = await res.text();
-      let body = text;
-      try { body = JSON.stringify(JSON.parse(text), null, 2); } catch (_) {}
-      out.textContent = (res.ok ? '' : 'HTTP ' + res.status + '\n') + body;
-      if (res.ok && CASE_GENERATION_ENABLED) {
-        let applied = false;
-        try { applied = applyGeneratedCase(JSON.parse(text).result); } catch (_) {}
-        out.textContent += applied ? '\n\n[applied to the game]' : '\n\n[not applied: fixed case kept]';
-      }
-    } catch (err) {
-      out.textContent = 'Error: ' + err.message;
-    } finally {
-      btn.disabled = false;
-    }
-  });
-  document.body.appendChild(panel);
-}
 </script>
 </body>
 </html>
