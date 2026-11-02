@@ -1281,6 +1281,13 @@ const GAVEL_GAP_MS = 450; // closing line strike (stage 12)
 const SOUND_FX_ENABLED = true;
 const SFX_VOLUME = { noise: 0.15, gavel: 1, alien: 0.5, cat: 0.8, keyboard: 0.35, warning: 0.8, blip: 0.2 };
 const ALIEN_BLIP_MS = 250;          // stages 5~7: alien.mp3 played this long (from its onset) when a plain advocate line starts
+// Recorded cut-in shouts (portrait close-up bubble), keyed like CUTIN_SHOUTS; played after the cut-in sweep (cutinSound, 250 ms)
+const CUTIN_VOICE_FILES = {
+  'issue1.prosecutor': 'prosecutor_01_final.mp3', 'issue2.prosecutor': 'prosecutor_02_final.mp3',
+  'issue1.defender':   'defender_01_final.mp3',   'issue2.defender':   'defender_02_final.mp3',
+};
+const CUTIN_VOICE_DELAY_MS = 250;
+const CUTIN_VOICE_VOLUME = 1;
 const GAVEL_CLIP_MS = 400;          // gavel.mp3 holds 2 strikes: play this much from the first strike's onset
 const GAVEL_ONSET_THRESHOLD = 0.2;  // onset = first sample above this share of the file's peak (found after decoding)
 const GAVEL_PREROLL_MS = 10;        // start this much before the onset so the attack isn't cut
@@ -3110,6 +3117,17 @@ function gavelClip() {
   gavelClipTimer = setTimeout(() => a.pause(), GAVEL_CLIP_MS);
 }
 // Short alien.mp3 blip on its own element (the trailer loop uses the shared one)
+// Cut-in shout recording for a speech (SPEECH_PLAN key); resolves when it ends, fails or is stopped. No file: resolves at once
+function cutinVoice(id, text, g) {
+  const file = CUTIN_VOICE_FILES[SPEECH_PLAN.find(x => x.side === id && x.text === text)?.id];
+  if (!file) return Promise.resolve();
+  return wait(CUTIN_VOICE_DELAY_MS).then(() => g !== gen ? null : new Promise(done => {
+    const a = cutinVoice.current = new Audio('../sounds/' + file);
+    a.volume = CUTIN_VOICE_VOLUME;
+    a.onended = a.onerror = a.onpause = done; // onpause: stopPlayback
+    a.play().catch(e => { console.warn('[sfx] cut-in voice', file, e.message); done(); });
+  }));
+}
 let alienOnsetMs = 0, blipTimer = 0;
 function alienBlip() {
   const a = alienBlip.el ??= new Audio('../sounds/alien.mp3');
@@ -3230,6 +3248,7 @@ function typeMsg(span, onDone) {
 async function say(id, text, ms, g, cutin) {
   await stepForth(id, g);
   if (g !== gen) return;
+  const shout = SOUND_FX_ENABLED && cutin ? cutinVoice(id, text, g) : null; // starts with the cut-in, after its sweep sound
   if (cutin) await cutinIntro(id, cutin, g); // stays on screen through the line
   if (g !== gen) return;
   if (id === 'judge') judgeCut(true);
@@ -3246,6 +3265,7 @@ async function say(id, text, ms, g, cutin) {
     if (inBox) speech(id, text, ms);
     await talk(els[id], ms, g);
   }
+  await shout; // a shout longer than the line holds the next line back
   if (g !== gen) return;
   typed(); // stays highlighted (cur) until the next message
   if (inBox) lineDone();
@@ -4197,6 +4217,7 @@ function stopPlayback() {
   sfxStop('alien.mp3');
   sfxStop('angry-cat.mp3');
   sfxStop('keyboard.mp3'); // typeMsg's finish doesn't run when its timer is cleared below
+  cutinVoice.current?.pause();
   [...timers.keys()].forEach(k => loop(k, false));
   stage.classList.remove('gavel', 'gavel-hit');
 }
